@@ -1,14 +1,20 @@
 // app/api/search/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { embedText, queryVector } from "@/lib/embeddings";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db/prisma";
 import { convertProduct, convertProductVariant } from "@/types";
 
 const RELEVANCE_THRESHOLD = 0.4; // 60% relevance threshold
 
 export async function POST(request: NextRequest) {
   try {
-    const { query, topK = 20, filters, page = 1, limit = 12 } = await request.json();
+    const {
+      query,
+      topK = 20,
+      filters,
+      page = 1,
+      limit = 12,
+    } = await request.json();
 
     if (!query || typeof query !== "string") {
       return NextResponse.json(
@@ -66,12 +72,12 @@ export async function POST(request: NextRequest) {
     );
 
     if (!vectorResults.matches || vectorResults.matches.length === 0) {
-      return NextResponse.json({ 
-        products: [], 
+      return NextResponse.json({
+        products: [],
         total: 0,
         currentPage: 1,
         totalPages: 0,
-        query 
+        query,
       });
     }
 
@@ -81,20 +87,20 @@ export async function POST(request: NextRequest) {
     );
 
     if (relevantMatches.length === 0) {
-      return NextResponse.json({ 
-        products: [], 
+      return NextResponse.json({
+        products: [],
         total: 0,
         currentPage: 1,
         totalPages: 0,
         query,
-        message: "No products found with sufficient relevance (60% or higher)"
+        message: "No products found with sufficient relevance (60% or higher)",
       });
     }
 
     // Extract product IDs from filtered results
     const allProductIds = relevantMatches.map((match) => match.id);
     const totalMatches = allProductIds.length;
-    
+
     // Apply pagination to product IDs
     const paginatedProductIds = allProductIds.slice(skip, skip + itemsPerPage);
 
@@ -180,8 +186,8 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error("Search API error:", error);
     return NextResponse.json(
-      { 
-        error: "Internal server error", 
+      {
+        error: "Internal server error",
         message: error.message || "An unexpected error occurred",
         products: [],
         total: 0,
@@ -219,13 +225,13 @@ export async function GET(request: NextRequest) {
     const vectorResults = await queryVector(queryEmbedding, vectorTopK);
 
     if (!vectorResults.matches || vectorResults.matches.length === 0) {
-      return NextResponse.json({ 
-        products: [], 
+      return NextResponse.json({
+        products: [],
         total: 0,
         currentPage: 1,
         totalPages: 0,
         hasMore: false,
-        query 
+        query,
       });
     }
 
@@ -235,14 +241,14 @@ export async function GET(request: NextRequest) {
     );
 
     if (relevantMatches.length === 0) {
-      return NextResponse.json({ 
-        products: [], 
+      return NextResponse.json({
+        products: [],
         total: 0,
         currentPage: 1,
         totalPages: 0,
         hasMore: false,
         query,
-        message: "No products found with sufficient relevance (60% or higher)"
+        message: "No products found with sufficient relevance (60% or higher)",
       });
     }
 
@@ -320,8 +326,8 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error("Search API error:", error);
     return NextResponse.json(
-      { 
-        error: "Internal server error", 
+      {
+        error: "Internal server error",
         message: error.message || "An unexpected error occurred",
         products: [],
         total: 0,

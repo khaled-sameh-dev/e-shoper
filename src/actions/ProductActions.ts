@@ -1,626 +1,531 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+import { prisma } from "@/lib/db/prisma";
+import { Category, Tag } from "@/types";
+import { index } from "@/lib/pinecone";
+import { convertProductVariant } from "@/lib/utils";
+
 import {
-  convertProduct,
-  convertProductVariant,
-  Product,
-  ProductVariant,
-} from "@/types";
+  getAllProductsFromDB,
+  getProductsCountFromDB,
+} from "@/lib/db/product.model";
 
-// Add this interface for products with variants
-interface ProductWithVariantsAndTags extends Product {
-  variants: ProductVariant[];
-  tags: string[];
-  colors: string[];
-  sizes: string[];
+interface ProductsParamsProps {
+  page?: number;
+  limit?: number;
 }
 
-/**
- * Get products with pagination and filters
- */
-// export async function getProducts(params?: {
-//   page?: number;
-//   limit?: number;
-//   categorySlug?: string;
-//   isFeatured?: boolean;
-// }) {
-//   const page = params?.page || 1;
-//   const limit = params?.limit || 12;
-//   const skip = (page - 1) * limit;
-
-//   const where: any = { isActive: true };
-
-//   if (params?.categorySlug) {
-//     where.category = { slug: params.categorySlug };
-//   }
-
-//   if (params?.isFeatured !== undefined) {
-//     where.isFeatured = params.isFeatured;
-//   }
-
-//   const [dbProducts, total] = await Promise.all([
-//     prisma.product.findMany({
-//       where,
-//       include: {
-//         category: true,
-//         variants: true,
-//         tags: {
-//           include: {
-//             tag: true,
-//           },
-//         },
-//       },
-//       skip,
-//       take: limit,
-//       orderBy: { createdAt: "desc" },
-//     }),
-//     prisma.product.count({ where }),
-//   ]);
-
-//   // Convert Prisma products with Decimal to frontend products with number
-//   // and extract variants data
-//   const products: ProductWithVariantsAndTags[] = dbProducts.map((product) => {
-//     const convertedProduct = convertProduct(product);
-//     const convertedVariants = product.variants.map(convertProductVariant);
-
-//     // Extract unique sizes from variants
-//     const sizes = Array.from(
-//       new Set(
-//         convertedVariants
-//           .map((v) => v.size)
-//           .filter((size): size is string => size !== null)
-//       )
-//     );
-
-//     // Extract unique colors from variants
-//     const colors = Array.from(
-//       new Set(
-//         convertedVariants
-//           .map((v) => v.color)
-//           .filter((color): color is string => color !== null)
-//       )
-//     );
-
-//     // Extract tag names
-//     const tags = product.tags.map((pt) => pt.tag.name);
-
-//     console.log("length" , products.length)
-//     console.log("products" , products)
-
-//     return {
-//       ...convertedProduct,
-//       variants: convertedVariants,
-//       tags,
-//       colors,
-//       sizes,
-//     };
-//   });
-
-//   return {
-//     products,
-//     total,
-//     page,
-//     totalPages: Math.ceil(total / limit),
-//   };
-// }
-
-// actions/ProductActions.ts - Add this updated getProducts function
-// This replaces your existing getProducts function
-
-// export async function getProducts(params?: {
-//   page?: number;
-//   limit?: number;
-//   categorySlug?: string;
-//   categories?: string[];
-//   tags?: string[];
-//   sizes?: string[];
-//   colors?: string[];
-//   minPrice?: number;
-//   maxPrice?: number;
-//   sort?: string;
-//   isFeatured?: boolean;
-// }) {
-//   const page = params?.page || 1;
-//   const limit = params?.limit || 12;
-//   const skip = (page - 1) * limit;
-
-//   const where: any = { isActive: true };
-
-//   // Category filter
-//   if (params?.categorySlug) {
-//     where.category = { slug: params.categorySlug };
-//   }
-
-//   // Multiple categories filter
-//   if (params?.categories && params.categories.length > 0) {
-//     where.categoryId = { in: params.categories };
-//   }
-
-//   // Tags filter
-//   if (params?.tags && params.tags.length > 0) {
-//     where.tags = {
-//       some: {
-//         tagId: { in: params.tags }
-//       }
-//     };
-//   }
-
-//   // Price range filter
-//   if (params?.minPrice !== undefined || params?.maxPrice !== undefined) {
-//     where.price = {};
-//     if (params.minPrice !== undefined) {
-//       where.price.gte = params.minPrice;
-//     }
-//     if (params.maxPrice !== undefined) {
-//       where.price.lte = params.maxPrice;
-//     }
-//   }
-
-//   // Sizes filter (check variants)
-//   if (params?.sizes && params.sizes.length > 0) {
-//     where.variants = {
-//       some: {
-//         size: { in: params.sizes }
-//       }
-//     };
-//   }
-
-//   // Colors filter (check variants)
-//   if (params?.colors && params.colors.length > 0) {
-//     where.variants = {
-//       some: {
-//         color: { in: params.colors }
-//       }
-//     };
-//   }
-
-//   // Featured filter
-//   if (params?.isFeatured !== undefined) {
-//     where.isFeatured = params.isFeatured;
-//   }
-
-//   // Determine sort order
-//   let orderBy: any = { createdAt: "desc" }; // default
-  
-//   if (params?.sort) {
-//     switch (params.sort) {
-//       case "price-low":
-//         orderBy = { price: "asc" };
-//         break;
-//       case "price-high":
-//         orderBy = { price: "desc" };
-//         break;
-//       case "name":
-//         orderBy = { name: "asc" };
-//         break;
-//       case "newest":
-//         orderBy = { createdAt: "desc" };
-//         break;
-//       case "featured":
-//         orderBy = [{ isFeatured: "desc" }, { createdAt: "desc" }];
-//         break;
-//     }
-//   }
-
-//   const [dbProducts, total] = await Promise.all([
-//     prisma.product.findMany({
-//       where,
-//       include: {
-//         category: true,
-//         variants: true,
-//         tags: {
-//           include: {
-//             tag: true,
-//           },
-//         },
-//       },
-//       skip,
-//       take: limit,
-//       orderBy,
-//     }),
-//     prisma.product.count({ where }),
-//   ]);
-
-//   // Convert Prisma products with Decimal to frontend products with number
-//   const products: ProductWithVariantsAndTags[] = dbProducts.map((product) => {
-//     const convertedProduct = convertProduct(product);
-//     const convertedVariants = product.variants.map(convertProductVariant);
-
-//     // Extract unique sizes from variants
-//     const sizes = Array.from(
-//       new Set(
-//         convertedVariants
-//           .map((v) => v.size)
-//           .filter((size): size is string => size !== null)
-//       )
-//     );
-
-//     // Extract unique colors from variants
-//     const colors = Array.from(
-//       new Set(
-//         convertedVariants
-//           .map((v) => v.color)
-//           .filter((color): color is string => color !== null)
-//       )
-//     );
-
-//     // Extract tag names
-//     const tags = product.tags.map((pt) => pt.tag.name);
-
-//     return {
-//       ...convertedProduct,
-//       variants: convertedVariants,
-//       tags,
-//       colors,
-//       sizes,
-//     };
-//   });
-
-//   return {
-//     products,
-//     total,
-//     page,
-//     totalPages: Math.ceil(total / limit),
-//   };
-// }
-
-
-
-/**
- * Get single product by slug
- */
-export async function getProductBySlug(slug: string) {
-  const dbProduct = await prisma.product.findUnique({
-    where: { slug },
-    include: {
-      category: true,
-      variants: true,
-      tags: {
-        include: { tag: true },
-      },
-      reviews: {
-        include: {
-          user: {
-            select: { name: true, image: true },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-      },
-    },
-  });
-
-  if (!dbProduct) return null;
-
-  const convertedVariants = dbProduct.variants.map(convertProductVariant);
-
-  // Extract unique sizes from variants
-  const sizes = Array.from(
-    new Set(
-      convertedVariants
-        .map((v) => v.size)
-        .filter((size): size is string => size !== null)
-    )
-  );
-
-  // Extract unique colors from variants
-  const colors = Array.from(
-    new Set(
-      convertedVariants
-        .map((v) => v.color)
-        .filter((color): color is string => color !== null)
-    )
-  );
-
-  // Extract tag names
-  const tags = dbProduct.tags.map((pt) => pt.tag.name);
-
-  // Convert the product and its variants
-  const product = {
-    ...convertProduct(dbProduct),
-    category: dbProduct.category,
-    variants: convertedVariants,
-    tags,
-    colors,
-    sizes,
-    reviews: dbProduct.reviews,
+export interface QueryParamsProps {
+  query?: string;
+  filters?: {
+    categories?: Category[];
+    price?: number[];
+    tags?: Tag[];
+    colors?: string[];
   };
-
-  return product;
+  topK?: number;
+  pageNum?: number;
 }
 
-/**
- * Get featured products
- */
-export async function getFeaturedProducts(limit: number = 8) {
-  const dbProducts = await prisma.product.findMany({
-    where: {
-      isFeatured: true,
-      isActive: true,
-    },
-    include: {
-      category: true,
-      variants: true,
-      tags: {
-        include: {
-          tag: true,
-        },
-      },
-    },
-    take: limit,
-    orderBy: { createdAt: "desc" },
-  });
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
-  // Convert products with variants and tags
-  const products = dbProducts.map((product) => {
-    const convertedProduct = convertProduct(product);
-    const convertedVariants = product.variants.map(convertProductVariant);
+export const getAllProducts = async (params?: ProductsParamsProps) => {
+  const page = params?.page ?? 1;
+  const limit = params?.limit ?? 12;
 
-    // Extract unique sizes from variants
-    const sizes = Array.from(
-      new Set(
-        convertedVariants
-          .map((v) => v.size)
-          .filter((size): size is string => size !== null)
-      )
-    );
+  if (page < 1) {
+    throw new Error("VALIDATION_ERROR: Page must be >= 1");
+  }
 
-    // Extract unique colors from variants
-    const colors = Array.from(
-      new Set(
-        convertedVariants
-          .map((v) => v.color)
-          .filter((color): color is string => color !== null)
-      )
-    );
+  const skip = (page - 1) * limit;
+  const where = { isActive: true };
 
-    // Extract tag names
-    const tags = product.tags.map((pt) => pt.tag.name);
+  const [products, total] = await Promise.all([
+    getAllProductsFromDB(where, { take: limit, skip }),
+    getProductsCountFromDB(where),
+  ]);
 
+  if (!products.length && page === 1) {
     return {
-      ...convertedProduct,
-      category: product.category,
-      variants: convertedVariants,
-      tags,
-      colors,
-      sizes,
-    };
-  });
-
-  return products;
-}
-
-/**
- * Get related products
- */
-export async function getRelatedProducts(
-  productId: string,
-  categoryId: string
-) {
-  const dbProducts = await prisma.product.findMany({
-    where: {
-      categoryId,
-      isActive: true,
-      id: { not: productId },
-    },
-    include: {
-      category: true,
-      variants: true,
-      tags: {
-        include: {
-          tag: true,
-        },
+      data: [],
+      pagination: {
+        page: 1,
+        pageSize: limit,
+        totalItems: 0,
+        hasMore: false,
       },
-    },
-    take: 4,
-  });
-
-  // Convert products with variants and tags
-  const products = dbProducts.map((product) => {
-    const convertedProduct = convertProduct(product);
-    const convertedVariants = product.variants.map(convertProductVariant);
-
-    // Extract unique sizes from variants
-    const sizes = Array.from(
-      new Set(
-        convertedVariants
-          .map((v) => v.size)
-          .filter((size): size is string => size !== null)
-      )
-    );
-
-    // Extract unique colors from variants
-    const colors = Array.from(
-      new Set(
-        convertedVariants
-          .map((v) => v.color)
-          .filter((color): color is string => color !== null)
-      )
-    );
-
-    // Extract tag names
-    const tags = product.tags.map((pt) => pt.tag.name);
-
-    return {
-      ...convertedProduct,
-      category: product.category,
-      variants: convertedVariants,
-      tags,
-      colors,
-      sizes,
     };
-  });
+  }
 
-  return products;
-}
+  return {
+    data: products,
+    pagination: {
+      page,
+      pageSize: limit,
+      totalItems: total,
+      hasMore: page < Math.ceil(total / limit),
+    },
+  };
+};
 
-/**
- * Create product (Admin)
- */
-export async function createProduct(data: {
-  name: string;
-  slug: string;
-  description: string;
-  price: number;
-  categoryId: string;
-  mainImage: string;
-  images?: string[];
-  stock?: number;
-  sku?: string;
-}) {
+
+
+export const getProducts = async ({
+  topK = 12,
+  query,
+  filters,
+  pageNum = 1,
+}: QueryParamsProps) => {
+  // Check if we should use Pinecone search
+  const hasQuery = query && query.trim().length > 0;
+  const hasFilters =
+    filters &&
+    (filters.categories?.length ||
+      filters.tags?.length ||
+      filters.colors?.length ||
+      filters.price);
+
+  // Use Pinecone for search queries or when filters are applied
+  if (hasQuery || hasFilters) {
+    console.log("Using Pinecone vector search, page:", pageNum);
+    return await searchProductsWithPinecone({
+      query,
+      filters,
+      topK,
+      pageNum,
+    });
+  }
+
+  // Use regular pagination for browsing all products
+  console.log("Fetching all products with pagination, page:", pageNum);
+  return await getAllProducts({ page: pageNum, limit: topK });
+};
+
+const generateEmbedding = async (text: string): Promise<number[]> => {
   try {
-    const dbProduct = await prisma.product.create({
-      data: {
-        ...data,
-        stock: data.stock || 0,
+    const response = await fetch(`${baseUrl}/api/search`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       },
+      body: JSON.stringify({
+        input: text,
+        model: "text-embedding-3-small",
+      }),
     });
 
-    const product = convertProduct(dbProduct);
-
-    revalidatePath("/products");
-    return { success: true, product };
-  } catch (error) {
-    return { success: false, error: "Failed to create product" };
-  }
-}
-
-/**
- * Update product (Admin)
- */
-export async function updateProduct(id: string, data: any) {
-  try {
-    const dbProduct = await prisma.product.update({
-      where: { id },
-      data,
-    });
-
-    const product = convertProduct(dbProduct);
-
-    revalidatePath("/products");
-    revalidatePath(`/products/${product.slug}`);
-    return { success: true, product };
-  } catch (error) {
-    return { success: false, error: "Failed to update product" };
-  }
-}
-
-/**
- * Delete product (Admin)
- */
-export async function deleteProduct(id: string) {
-  try {
-    await prisma.product.delete({ where: { id } });
-    revalidatePath("/products");
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: "Failed to delete product" };
-  }
-}
-
-// ============================================================================
-// CATEGORY ACTIONS
-// ============================================================================
-
-/**
- * Get all categories
- */
-export async function getCategories() {
-  const categories = await prisma.category.findMany({
-    orderBy: { name: "asc" },
-  });
-  return categories;
-}
-
-export async function getTags() {
-  const response = await prisma.tag.findMany({
-    orderBy: { name: "asc" },
-  });
-
-  return response;
-}
-
-/**
- * Get main categories with children
- */
-export async function getMainCategories() {
-  const categories = await prisma.category.findMany({
-    where: { parentId: null },
-    include: {
-      children: true,
-    },
-    orderBy: { name: "asc" },
-  });
-  return categories;
-}
-
-/**
- * Get category by slug
- */
-export async function getCategoryBySlug(slug: string) {
-  const category = await prisma.category.findUnique({
-    where: { slug },
-    include: {
-      children: true,
-      parent: true,
-    },
-  });
-  return category;
-}
-
-/**
- * Create category (Admin)
- */
-export async function createCategory(data: {
-  name: string;
-  slug: string;
-  description?: string;
-  parentId?: string;
-}) {
-  try {
-    const category = await prisma.category.create({ data });
-    revalidatePath("/products");
-    return { success: true, category };
-  } catch (error) {
-    return { success: false, error: "Failed to create category" };
-  }
-}
-
-/**
- * Update category (Admin)
- */
-export async function updateCategory(id: string, data: any) {
-  try {
-    const category = await prisma.category.update({
-      where: { id },
-      data,
-    });
-    revalidatePath("/products");
-    return { success: true, category };
-  } catch (error) {
-    return { success: false, error: "Failed to update category" };
-  }
-}
-
-/**
- * Delete category (Admin)
- */
-export async function deleteCategory(id: string) {
-  try {
-    // Check if has products
-    const count = await prisma.product.count({
-      where: { categoryId: id },
-    });
-
-    if (count > 0) {
-      return { success: false, error: "Category has products" };
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.status}`);
     }
 
-    await prisma.category.delete({ where: { id } });
-    revalidatePath("/products");
-    return { success: true };
+    const data = await response.json();
+    return data.data[0].embedding;
   } catch (error) {
-    return { success: false, error: "Failed to delete category" };
+    console.error("Error generating embedding:", error);
+    throw error;
   }
-}
+};
+
+// Search products using Pinecone vector search
+export const searchProductsWithPinecone = async ({
+  query,
+  filters,
+  topK = 12,
+  pageNum = 1,
+}: QueryParamsProps) => {
+  try {
+    // Generate embedding for the search query
+    const embedding = await generateEmbedding(query || "");
+
+    // Build Pinecone filter
+    const pineconeFilter: any = {};
+
+    if (filters?.categories && filters.categories.length > 0) {
+      pineconeFilter.categoryId = {
+        $in: filters.categories.map((c) => c.id),
+      };
+    }
+
+    if (filters?.tags && filters.tags.length > 0) {
+      pineconeFilter.tags = {
+        $in: filters.tags.map((t) => t.name),
+      };
+    }
+
+    if (filters?.colors && filters.colors.length > 0) {
+      pineconeFilter.colors = {
+        $in: filters.colors,
+      };
+    }
+
+    if (filters?.price && filters.price.length === 2) {
+      pineconeFilter.price = {
+        $gte: filters.price[0],
+        $lte: filters.price[1],
+      };
+    }
+
+    // Query Pinecone
+    const queryResponse = await index.query({
+      vector: embedding,
+      topK: topK * pageNum, // Fetch enough results for pagination
+      filter: pineconeFilter,
+      includeMetadata: true,
+    });
+
+    // Extract product IDs from Pinecone results
+    const startIndex = (pageNum - 1) * topK;
+    const endIndex = startIndex + topK;
+    const paginatedMatches = queryResponse.matches.slice(startIndex, endIndex);
+
+    const productIds = paginatedMatches.map((match) => match.id);
+
+    if (productIds.length === 0) {
+      return {
+        data: [],
+        pagination: {
+          page: pageNum,
+          pageSize: topK,
+          totalPages: 0,
+          totalItems: 0,
+          hasMore: false,
+        },
+      };
+    }
+
+    // Fetch full product details from database
+    const products = await prisma.product.findMany({
+      where: {
+        id: { in: productIds },
+        isActive: true,
+      },
+      include: {
+        category: true,
+        variants: true,
+        tags: {
+          include: {
+            tag: true,
+          },
+        },
+        reviews: true,
+      },
+    });
+
+    // Sort products by Pinecone relevance score
+    const sortedProducts = productIds
+      .map((id) => products.find((p) => p.id === id))
+      .filter((p): p is NonNullable<typeof p> => p !== null);
+
+    // Convert Decimal fields to numbers and calculate stock
+    const convertedProducts = sortedProducts.map((product) => {
+      // Calculate total stock from variants
+      const totalStock =
+        product.variants.length > 0
+          ? product.variants.reduce(
+              (acc, variant) => acc + (variant.stock || 0),
+              0
+            )
+          : 0;
+
+      return {
+        ...product,
+        category: product.category,
+        tags: product.tags,
+        variants: product.variants.map(convertProductVariant),
+        stock: totalStock,
+        reviews: product.reviews,
+      };
+    });
+
+    const totalResults = queryResponse.matches.length;
+    const totalPages = Math.ceil(totalResults / topK);
+
+    return {
+      data: convertedProducts,
+      pagination: {
+        page: pageNum,
+        pageSize: topK,
+        totalPages,
+        totalItems: totalResults,
+        hasMore: pageNum < totalPages,
+      },
+    };
+  } catch (error) {
+    console.error("Error in Pinecone search:", error);
+    throw new Error(
+      `Pinecone search failed: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+  }
+};
+
+export const getProducts1 = async ({
+  topK = 12,
+  query,
+  filters,
+  pageNum = 1,
+}: QueryParamsProps) => {
+  // Check if we should use Pinecone search
+  const hasQuery = query && query.trim().length > 0;
+  const hasFilters =
+    filters &&
+    (filters.categories?.length ||
+      filters.tags?.length ||
+      filters.colors?.length ||
+      filters.price);
+
+  // Use Pinecone for search queries or when filters are applied
+  if (hasQuery || hasFilters) {
+    console.log("Using Pinecone vector search, page:", pageNum);
+    return await searchProductsWithPinecone({
+      query,
+      filters,
+      topK,
+      pageNum,
+    });
+  }
+
+  // Use regular pagination for browsing all products
+  console.log("Fetching all products with pagination, page:", pageNum);
+  return await getAllProducts({ page: pageNum, limit: topK });
+};
+
+// Get single product by ID
+export const getProductById = async (id: string) => {
+  try {
+    const product = await prisma.product.findUnique({
+      where: {
+        id: id,
+        isActive: true,
+      },
+      include: {
+        category: true,
+        variants: {
+          orderBy: {
+            createdAt: "asc",
+          },
+        },
+        tags: {
+          include: {
+            tag: true,
+          },
+        },
+        reviews: {
+          take: 10,
+          orderBy: {
+            createdAt: "desc",
+          },
+          include: {
+            user: {
+              select: {
+                name: true,
+                image: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!product) {
+      return null;
+    }
+
+    // Convert product (Decimal to number)
+    const convertedProduct = product;
+    const convertedVariants = product.variants.map(convertProductVariant);
+
+    // Extract unique sizes from variants
+    const sizes = Array.from(
+      new Set(
+        convertedVariants
+          .map((v) => v.size)
+          .filter((size): size is string => size !== null)
+      )
+    );
+
+    // Extract unique colors from variants
+    const colors = Array.from(
+      new Set(
+        convertedVariants
+          .map((v) => v.color)
+          .filter((color): color is string => color !== null)
+      )
+    );
+
+    // Extract tag names
+    const tags = product.tags.map((pt) => pt.tag.name);
+
+    // Calculate average rating from reviews
+    const rating =
+      product.reviews.length > 0
+        ? product.reviews.reduce((acc, review) => acc + review.rating, 0) /
+          product.reviews.length
+        : 0;
+
+    // Format reviews
+    const reviews = product.reviews.map((review) => ({
+      id: review.id,
+      author: review.user.name || "Anonymous",
+      authorImage: review.user.image,
+      rating: review.rating,
+      title: review.title,
+      comment: review.comment,
+      images: review.images,
+      isVerified: review.isVerified,
+      date: new Date(review.createdAt).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+    }));
+
+    // Calculate total stock
+    const totalStock =
+      convertedVariants.length > 0
+        ? convertedVariants.reduce(
+            (acc, variant) => acc + (variant.stock || 0),
+            0
+          )
+        : 0;
+
+    return {
+      ...convertedProduct,
+      category: product.category,
+      variants: convertedVariants,
+      tags,
+      colors,
+      sizes,
+      stock: totalStock,
+      rating: Math.round(rating * 10) / 10,
+      reviewCount: product.reviews.length,
+      reviews,
+    };
+  } catch (error) {
+    console.error("Error fetching product by ID:", error);
+    throw new Error(
+      `Error fetching product: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+  }
+};
+
+export const getCategories = async (): Promise<Category[]> => {
+  try {
+    const categories = await prisma.category.findMany({
+      orderBy: {
+        name: "asc",
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        image: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return categories as Category[];
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    return [];
+  }
+};
+
+export const getTags = async (): Promise<Tag[]> => {
+  try {
+    const tags = await prisma.tag.findMany({
+      orderBy: {
+        name: "asc",
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        createdAt: true,
+      },
+    });
+
+    return tags as Tag[];
+  } catch (error) {
+    console.error("Error fetching tags:", error);
+    return [];
+  }
+};
+
+export const getAllProducts1 = async (
+  params?: ProductsParamsProps
+): Promise<any> => {
+  const page = params?.page || 1;
+  const limit = params?.limit || 12;
+  const skip = (page - 1) * limit;
+
+  try {
+    if (page < 1) return { error: "page must be greater than 0" };
+    const where = { isActive: true };
+
+    const [products, total] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        include: {
+          category: true,
+          variants: true,
+          tags: {
+            include: {
+              tag: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        skip,
+        take: limit,
+      }),
+      prisma.product.count({ where }),
+    ]);
+
+    if (!products.length && page === 1) {
+      return {
+        data: [],
+        pagination: {
+          page: 1,
+          pageSize: limit,
+          totalPages: 0,
+          totalItems: 0,
+          hasMore: false,
+        },
+      };
+    }
+
+    // Convert Decimal fields to numbers
+    // const convertedProducts = products.map((product) => ({
+    //   ...product,
+    //   category: product.category,
+    //   tags: product.tags,
+    //   variants: product.variants.map(convertProductVariant),
+    // }));
+
+    return {
+      data: products,
+      pagination: {
+        page,
+        pageSize: limit,
+        // totalPages: Math.ceil(total / limit),
+        totalItems: total,
+        hasMore: page < Math.ceil(total / limit),
+      },
+    };
+  } catch (error) {
+    throw new Error(
+      `Error while retrieving products: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+  }
+};

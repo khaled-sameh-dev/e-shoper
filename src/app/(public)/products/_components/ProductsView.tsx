@@ -1,7 +1,7 @@
 // app/products/_components/ProductsView.tsx
 "use client";
 
-import { getProducts } from "@/actions/ProductActions1";
+import { getProducts } from "@/actions/ProductActions";
 import { Category, Product, Tag } from "@/types";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, useMemo } from "react";
@@ -152,8 +152,8 @@ const ProductsView = ({ categories, tags }: ProductsViewProps) => {
       }
 
       // Handle different response formats
-      let productsData = result.products || result.data || [];
-      const totalCount = result.total || 0;
+      let productsData = result.data || [];
+      const totalCount = result.pagination.totalItems || 0;
 
       // Apply client-side sorting if needed
       productsData = sortProducts(productsData, sortBy);
@@ -212,7 +212,7 @@ const ProductsView = ({ categories, tags }: ProductsViewProps) => {
 
   // Initial fetch and refetch on query/filter/sort change
   useEffect(() => {
-    console.log("render")
+    console.log("render");
     setCurrentPage(1);
     setProducts([]);
     fetchProducts(1, false);

@@ -1,4 +1,4 @@
-import { prisma } from "../lib/prisma";
+import { prisma } from "../lib/db/prisma";
 import { embedText, upsertVectors } from "../lib/embeddings";
 
 async function main() {
@@ -54,7 +54,7 @@ async function main() {
     console.error("❌ Error seeding Pinecone:", e);
     throw e;
   }
-};
+}
 
 main()
   .catch((e) => {

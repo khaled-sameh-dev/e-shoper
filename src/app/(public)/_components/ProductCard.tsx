@@ -328,7 +328,7 @@ const ProductCard = ({ item }: ProductCardProps) => {
     <div className="group">
       {/* Product Image with Overlays */}
       <div className="relative bg-gray-100 rounded-lg overflow-hidden mb-4 aspect-[3/4]">
-        <Link href={`/products/${item.slug}`}>
+        <Link href={`/products/${item.id}`}>
           <Image
             src={item.mainImage || "/placeholder-image.jpg"}
             alt={item.name}
@@ -433,7 +433,7 @@ const ProductCard = ({ item }: ProductCardProps) => {
 
       {/* Product Details */}
       <div className="space-y-2">
-        <Link href={`/products/${item.slug}`}>
+        <Link href={`/products/${item.id}`}>
           {/* Product Name */}
           <h3 className="font-bold text-base tracking-wide line-clamp-2 group-hover:text-main-blue transition-colors">
             {item.name}

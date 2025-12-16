@@ -1,15 +1,21 @@
-import { Button } from "@/components/ui/button";
-import SalesBanner from "./_components/SalesBanner";
 import Link from "next/link";
-import { getCategories, getProducts } from "@/actions/ProductActions";
+
+import { Button } from "@/components/ui/button";
+
+import SalesBanner from "./_components/SalesBanner";
 import ProductsView from "./_components/ProductsView";
 import CategoriesSection from "./_components/CategoriesSection";
 import NewsletterSection from "./_components/NewsletterSection";
+import { getCategories, getProducts } from "@/actions/ProductActions";
 
 async function Home() {
-  // Fetch products - now already converted to number prices
-  const { products } = await getProducts({ limit: 4 });
+ 
+  const { data } = await getProducts({ topK: 4 });
   const categories = await getCategories();
+
+  console.log(data);
+
+  if (!data) return <>no products found</>;
 
   return (
     <div className="flex flex-col w-full px-8 mx-auto md:max-w-7xl">
@@ -32,16 +38,16 @@ async function Home() {
               variant={"link"}
               className="bg-main-blue text-white hover:bg-main-blue/70"
             >
-              <Link href={"/search"}>View All Products</Link>
+              <Link href={"/products"}>View All Products</Link>
             </Button>
           </div>
 
           {/* Products Display */}
           <div className="my-8">
-            {!products.length ? (
+            {!data.length ? (
               <p className="text-xl font-bold text-gray-600">No Products Yet</p>
             ) : (
-              <ProductsView products={products} />
+              <ProductsView products={data} />
             )}
           </div>
         </div>
