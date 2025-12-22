@@ -18,13 +18,11 @@ import FilterSidebar from "../products/_components/FilterBar";
 import { Category, Tag } from "@/types";
 
 interface ProductsToolbarProps {
-  total: number;
   categories: Category[];
   tags: Tag[];
 }
 
 export default function ProductsToolbar({
-  total,
   categories,
   tags,
 }: ProductsToolbarProps) {
@@ -32,7 +30,7 @@ export default function ProductsToolbar({
   const searchParams = useSearchParams();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  const sortBy = searchParams.get("sortBy") || "featured";
+  const sortBy = searchParams.get("sort") || "featured";
 
   const handleSortChange = (value: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -66,10 +64,7 @@ export default function ProductsToolbar({
             </SheetContent>
           </Sheet>
 
-          <p className="text-sm text-gray-600">
-            Showing <span className="font-semibold">{total}</span> result
-            {total !== 1 ? "s" : ""}
-          </p>
+         
         </div>
 
         {/* Sort Dropdown */}

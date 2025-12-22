@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import FilterSidebar from "./_components/FilterBar";
 import ProductsPageSkeleton from "./_components/skeleton/ProductsPageSkeleton";
 import ProductsView from "./_components/ProductsView";
+
 import { getCategories, getTags } from "@/actions/ProductActions";
 
 async function ProductsPageContent() {

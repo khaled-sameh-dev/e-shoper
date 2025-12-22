@@ -35,3 +35,11 @@ export const getProductsCountFromDB = async (
     throw new Error("Failed to count products");
   }
 };
+
+export const getCategoryById = async (id: string) => {
+  try {
+    return await prisma.category.findUnique({ where: { id } });
+  } catch {
+    throw new Error("Failed to count products");
+  }
+};

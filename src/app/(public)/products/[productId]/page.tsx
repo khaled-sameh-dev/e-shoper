@@ -1,12 +1,12 @@
 // app/products/[id]/page.tsx
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
-import { getProductById } from "@/actions/ProductActions1";
 import ProductBreadcrumb from "../_components/ProductBreadcrumb";
 import ProductImageGallery from "../_components/ProductImageGallery";
 import ProductInfo from "../_components/ProductInfo";
 import ProductTabs from "../_components/ProductTabs";
 
+import { getProductById } from "@/actions/ProductActions";
 
 // Generate metadata for SEO
 export async function generateMetadata({
@@ -75,7 +75,7 @@ export default async function ProductPage({
               images={allImages}
               productName={productData.name}
               isFeatured={productData.isFeatured}
-              comparePrice={productData.comparePrice}
+              comparePrice={productData.price}
               price={productData.price}
             />
 

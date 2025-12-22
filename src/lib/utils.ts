@@ -1,21 +1,28 @@
 import { ProductVariant } from "@/types";
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
-
 
 export const convertProductVariant = (variant: any): ProductVariant => ({
   ...variant,
   stock: variant.stock || 0,
 });
 
-export const getSearchTerm = (searchParams: { [key: string]: string | string[] | undefined }) =>{
+export const getSearchTerm = (searchParams: {
+  [key: string]: string | string[] | undefined;
+}) => {
   const searchTerm = searchParams?.query;
 
-  if (typeof searchTerm !== 'string') return '';
+  if (typeof searchTerm !== "string") return "";
 
-  return searchTerm.trim()
-}
+  return searchTerm.trim();
+};
+
+export const toggleFilterValue = <T>(list: T[], value: T): T[] => {
+  return list.includes(value)
+    ? list.filter((v) => v !== value)
+    : [...list, value];
+};

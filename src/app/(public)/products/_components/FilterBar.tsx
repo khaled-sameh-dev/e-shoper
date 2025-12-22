@@ -348,28 +348,21 @@
 
 // export default FilterSidebar;
 
-
 "use client";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Category, Tag } from "@/types";
 import { Slider } from "@/components/ui/slider";
 import { AVAILABLE_SIZES, MAIN_COLORS } from "@/types/contants";
 import CollapsibleFilter from "./CollapsibleFilter";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import {
-  toggleCategory,
-  toggleTag,
-  toggleSize,
-  toggleColor,
-  setPriceRange,
-  clearAllFilters,
-} from "@/store/filterSlice";
+import { useFilter } from "@/hooks/use-filter";
+import { Button } from "@/components/ui/button";
 
 interface FilterSidebarProps {
   categories: Category[];
@@ -377,22 +370,28 @@ interface FilterSidebarProps {
 }
 
 const FilterSidebar = ({ categories, tags }: FilterSidebarProps) => {
-  const dispatch = useDispatch();
+  const { filters, clearFilters, toggleFilter, setRange } = useFilter();
 
-  // 🔥 Redux controls the filters 100%
-  const filters = useSelector((state: RootState) => state.filter);
+  const hasActiveFilters = useMemo(
+    () =>
+      filters.categories.length > 0 ||
+      filters.tags.length > 0 ||
+      filters.sizes.length > 0 ||
+      filters.colors.length > 0 ||
+      filters.priceRange[0] > 0 ||
+      filters.priceRange[1] < 1000,
+    [filters]
+  );
 
-  const handleClearAll = () => {
-    dispatch(clearAllFilters());
-  };
-
-  const hasActiveFilters =
-    filters.categories.length > 0 ||
-    filters.tags.length > 0 ||
-    filters.sizes.length > 0 ||
-    filters.colors.length > 0 ||
-    filters.priceRange[0] > 0 ||
-    filters.priceRange[1] < 1000;
+  const activeFiltersCount = useMemo(
+    () =>
+      filters.categories.length +
+      filters.tags.length +
+      filters.sizes.length +
+      filters.colors.length +
+      (filters.priceRange[0] !== 0 || filters.priceRange[1] !== 1000 ? 1 : 0),
+    [filters]
+  );
 
   return (
     <motion.div
@@ -403,14 +402,14 @@ const FilterSidebar = ({ categories, tags }: FilterSidebarProps) => {
     >
       {/* Clear All Button */}
       {hasActiveFilters && (
-        <div className="flex items-center justify-between px-4">
-          <span className="text-sm font-semibold">Active Filters</span>
-          <button
-            onClick={handleClearAll}
-            className="text-sm text-red-600 hover:text-red-700 font-medium"
+        <div className="flex items-center justify-between px-4 py-2 bg-gray-200 rounded">
+          <span className="text-sm font-semibold">{activeFiltersCount} Active Filters</span>
+          <Button variant={"destructive"}
+            onClick={clearFilters}
+            className="text-xs font-medium"
           >
             Clear All
-          </button>
+          </Button>
         </div>
       )}
 
@@ -433,10 +432,15 @@ const FilterSidebar = ({ categories, tags }: FilterSidebarProps) => {
                   className="flex items-center gap-2"
                 >
                   <Checkbox
-                    checked={filters.categories.includes(category.id)}
-                    onCheckedChange={() => dispatch(toggleCategory(category.id))}
+                    checked={filters.categories.includes(category.slug)}
+                    onCheckedChange={() =>
+                      toggleFilter("categories", category.slug)
+                    }
                   />
-                  <Label className="cursor-pointer text-sm font-mono">
+                  <Label
+                    className="cursor-pointer text-sm font-mono"
+                    id={category.slug}
+                  >
                     {category.name}
                   </Label>
                 </motion.li>
@@ -450,9 +454,7 @@ const FilterSidebar = ({ categories, tags }: FilterSidebarProps) => {
           <div className="space-y-3 px-4">
             <Slider
               value={filters.priceRange}
-              onValueChange={(value) =>
-                dispatch(setPriceRange(value as [number, number]))
-              }
+              onValueChange={(value) => setRange(value as [number, number])}
               min={0}
               max={1000}
               step={10}
@@ -467,16 +469,16 @@ const FilterSidebar = ({ categories, tags }: FilterSidebarProps) => {
         {/* Colors */}
         <CollapsibleFilter label="Colors">
           <div className="px-4 flex flex-wrap gap-3">
-            {MAIN_COLORS.map((color, index) => {
-              const isSelected = filters.colors.includes(color.value);
+            {MAIN_COLORS.map((color) => {
+              const isSelected = filters.colors.includes(color.name);
 
               return (
                 <motion.button
-                  key={color.value}
+                  key={color.name}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => dispatch(toggleColor(color.value))}
-                  className={`w-6 h-6 rounded cursor-pointer ${
+                  onClick={() => toggleFilter("colors", color.name)}
+                  className={`w-6 h-6 rounded cursor-pointer flex items-center justify-center ${
                     isSelected
                       ? "ring-2 ring-offset-2 ring-black"
                       : "hover:ring-2 hover:ring-gray-300"
@@ -514,7 +516,7 @@ const FilterSidebar = ({ categories, tags }: FilterSidebarProps) => {
               >
                 <Checkbox
                   checked={filters.sizes.includes(size)}
-                  onCheckedChange={() => dispatch(toggleSize(size))}
+                  onCheckedChange={() => toggleFilter("sizes", size)}
                 />
                 <Label className="text-sm font-mono">{size}</Label>
               </motion.li>
@@ -526,14 +528,14 @@ const FilterSidebar = ({ categories, tags }: FilterSidebarProps) => {
         {tags?.length > 0 && (
           <CollapsibleFilter label="Tags">
             <div className="px-4 flex flex-wrap gap-2">
-              {tags.map((tag, index) => {
-                const isSelected = filters.tags.includes(tag.id);
+              {tags.map((tag) => {
+                const isSelected = filters.tags.includes(tag.slug);
 
                 return (
                   <motion.button
                     key={tag.id}
                     whileHover={{ scale: 1.05 }}
-                    onClick={() => dispatch(toggleTag(tag.id))}
+                    onClick={() => toggleFilter("tags", tag.slug)}
                     className={`px-3 py-1 rounded-full text-xs font-semibold border-2 ${
                       isSelected
                         ? "bg-black text-white border-black"

@@ -340,3 +340,11 @@ export interface ApiError {
   message?: string;
   details?: any;
 }
+
+export interface Filters {
+  categories?: string[];
+  tags?: string[];
+  sizes?: string[];
+  colors?: string[];
+  priceRange?: [number, number];
+}
