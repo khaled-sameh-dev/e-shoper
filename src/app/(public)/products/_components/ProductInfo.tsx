@@ -1,60 +1,105 @@
 "use client";
 
-import { useState } from "react";
-import { Star, Minus, Plus, ShoppingCart, Heart, Share2, Truck, Shield, RefreshCw } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  Star,
+  Minus,
+  Plus,
+  ShoppingCart,
+  Heart,
+  Share2,
+  Truck,
+  Shield,
+  RefreshCw,
+  Check,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { ProductDetailData } from "@/types/product";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  addToCart,
+  incrementCartItem,
+  decrementCartItem,
+  selectCartItemQuantity,
+  selectCartLoading,
+} from "@/store/cartSlice";
+import { CartItem } from "@/types";
 
 interface ProductInfoProps {
-  product: {
-    id: string;
-    name: string;
-    description: string;
-    price: number;
-    comparePrice: number | null;
-    stock: number;
-    sku: string | null;
-    rating: number;
-    reviewCount: number;
-    category: {
-      name: string;
-      slug: string;
-    };
-    colors?: string[];
-    sizes?: string[];
-  };
+  product: ProductDetailData;
 }
 
 export default function ProductInfo({ product }: ProductInfoProps) {
+  const dispatch = useDispatch();
+  const isLoading = useSelector(selectCartLoading);
+
   const [selectedColor, setSelectedColor] = useState<string | null>(
-    product.colors?.[0] || null
+    product.colors[0] || null
   );
   const [selectedSize, setSelectedSize] = useState<string | null>(
-    product.sizes?.[0] || null
+    product.sizes[0] || null
   );
-  const [quantity, setQuantity] = useState(1);
+  const [showAddedToCart, setShowAddedToCart] = useState(false);
 
-  const handleQuantityChange = (delta: number) => {
-    const newQuantity = quantity + delta;
-    if (newQuantity >= 1 && newQuantity <= product.stock) {
-      setQuantity(newQuantity);
-    }
-  };
+  // Find the selected variant based on color and size
+  const selectedVariant = product.variants.find(
+    (v) => v.color === selectedColor && v.size === selectedSize
+  );
+
+  const availableStock = selectedVariant?.stock || 0;
+
+  // Get cart item quantity for this specific variant
+  const cartItemQuantity = useSelector(
+    selectCartItemQuantity(product.id, selectedVariant?.id || null)
+  );
+
+  // Calculate final price with discount
+  const finalPrice = product.discountAmount
+    ? product.price - product.discountAmount
+    : product.price;
+
+  const discountPercentage = product.discountAmount
+    ? Math.round((product.discountAmount / product.price) * 100)
+    : null;
 
   const handleAddToCart = () => {
-    console.log("Add to cart:", {
+    if (!selectedVariant || availableStock === 0) return;
+
+    const cartItem: CartItem = {
       productId: product.id,
-      quantity,
-      color: selectedColor,
-      size: selectedSize,
-    });
-    // TODO: Implement add to cart logic
+      variantId: selectedVariant.id,
+      quantity: 1,
+      attributes: {
+        color: selectedColor,
+        size: selectedSize,
+      },
+    };
+
+    dispatch(addToCart(cartItem));
+
+    setShowAddedToCart(true);
+    setTimeout(() => setShowAddedToCart(false), 2000);
+  };
+
+  const handleIncrementInCart = () => {
+    if (!selectedVariant || cartItemQuantity >= availableStock) return;
+    const cartItemId = `${product.id}:${selectedVariant.id}`;
+    dispatch(incrementCartItem(cartItemId));
+  };
+
+  const handleDecrementInCart = () => {
+    if (!selectedVariant) return;
+    const cartItemId = `${product.id}:${selectedVariant.id}`;
+    dispatch(decrementCartItem(cartItemId));
   };
 
   const handleAddToWishlist = () => {
-    console.log("Add to wishlist:", product.id);
-    // TODO: Implement wishlist logic
+    console.log("Add to wishlist:", {
+      productId: product.id,
+      variantId: selectedVariant?.id,
+    });
   };
 
   const handleShare = async () => {
@@ -69,75 +114,84 @@ export default function ProductInfo({ product }: ProductInfoProps) {
         console.log("Share failed:", error);
       }
     } else {
-      // Fallback: Copy to clipboard
       navigator.clipboard.writeText(window.location.href);
-      // TODO: Show toast notification
+      alert("Link copied to clipboard!");
     }
   };
 
+  const isInCart = cartItemQuantity > 0;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 max-w-2xl">
       {/* Title and Rating */}
       <div>
-        <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-3">
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
           {product.name}
         </h1>
-        <div className="flex items-center gap-4 mb-3">
+        <div className="flex items-center gap-3 mb-2">
           <div className="flex items-center gap-1">
             {[...Array(5)].map((_, i) => (
               <Star
                 key={i}
-                className={`w-5 h-5 ${
+                className={`w-4 h-4 ${
                   i < Math.floor(product.rating)
                     ? "fill-yellow-400 text-yellow-400"
                     : "text-gray-300"
                 }`}
               />
             ))}
-            <span className="text-sm text-gray-600 ml-2">
+            <span className="text-sm text-gray-600 ml-1.5">
               {product.rating.toFixed(1)} ({product.reviewCount}{" "}
               {product.reviewCount === 1 ? "review" : "reviews"})
             </span>
           </div>
         </div>
-        <Badge variant="secondary" className="text-sm">
+        <Badge variant="secondary" className="text-xs px-2 py-0.5">
           {product.category.name}
         </Badge>
       </div>
 
       {/* Price */}
-      <div className="flex items-baseline gap-3">
-        <span className="text-3xl font-bold text-gray-900">
-          ${product.price.toFixed(2)}
+      <div className="flex items-baseline gap-2 flex-wrap">
+        <span className="text-2xl font-bold text-gray-900">
+          ${finalPrice.toFixed(2)}
         </span>
-        {product.comparePrice && product.comparePrice > product.price && (
-          <span className="text-xl text-gray-500 line-through">
-            ${product.comparePrice.toFixed(2)}
-          </span>
+        {product.discountAmount && product.discountAmount > 0 && (
+          <>
+            <span className="text-lg text-gray-500 line-through">
+              ${product.price.toFixed(2)}
+            </span>
+            <Badge variant="destructive" className="text-xs px-2 py-0.5">
+              Save ${product.discountAmount.toFixed(2)} ({discountPercentage}%
+              off)
+            </Badge>
+          </>
         )}
-        <Badge
-          variant={product.stock > 0 ? "default" : "destructive"}
-          className="ml-2"
-        >
-          {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
-        </Badge>
       </div>
 
-      {/* SKU */}
-      {product.sku && (
-        <p className="text-sm text-gray-600">
-          SKU: <span className="font-mono">{product.sku}</span>
-        </p>
-      )}
+      {/* Stock Status */}
+      <div className="flex items-center gap-2">
+        <Badge
+          variant={availableStock > 0 ? "default" : "destructive"}
+          className="text-xs px-2 py-0.5"
+        >
+          {availableStock > 0 ? `${availableStock} in stock` : "Out of stock"}
+        </Badge>
+        {availableStock > 0 && availableStock <= 10 && (
+          <span className="text-xs text-orange-600 font-medium">
+            🔥 Low stock - order soon!
+          </span>
+        )}
+      </div>
 
       {/* Description */}
-      <p className="text-gray-700 leading-relaxed">{product.description}</p>
+      <p className="text-sm text-gray-700 leading-relaxed">{product.description}</p>
 
       <Separator />
 
       {/* Color Selection */}
-      {product.colors && product.colors.length > 0 && (
-        <div className="space-y-3">
+      {product.colors.length > 0 && (
+        <div className="space-y-2">
           <label className="text-sm font-semibold text-gray-900">
             Color:{" "}
             <span className="font-normal text-gray-600">{selectedColor}</span>
@@ -147,9 +201,9 @@ export default function ProductInfo({ product }: ProductInfoProps) {
               <button
                 key={color}
                 onClick={() => setSelectedColor(color)}
-                className={`w-12 h-12 rounded-full border-2 transition-all ${
+                className={`w-10 h-10 rounded-full border-2 transition-all ${
                   selectedColor === color
-                    ? "border-black ring-2 ring-black ring-offset-2 scale-110"
+                    ? "border-black ring-2 ring-black ring-offset-2 scale-105"
                     : "border-gray-300 hover:border-gray-400 hover:scale-105"
                 }`}
                 style={{ backgroundColor: color.toLowerCase() }}
@@ -162,15 +216,15 @@ export default function ProductInfo({ product }: ProductInfoProps) {
       )}
 
       {/* Size Selection */}
-      {product.sizes && product.sizes.length > 0 && (
-        <div className="space-y-3">
+      {product.sizes.length > 0 && (
+        <div className="space-y-2">
           <label className="text-sm font-semibold text-gray-900">Size</label>
           <div className="flex gap-2 flex-wrap">
             {product.sizes.map((size) => (
               <button
                 key={size}
                 onClick={() => setSelectedSize(size)}
-                className={`px-6 py-3 border-2 rounded-lg font-medium transition-all ${
+                className={`px-4 py-2 border-2 rounded-lg text-sm font-medium transition-all ${
                   selectedSize === size
                     ? "border-black bg-black text-white"
                     : "border-gray-300 hover:border-gray-900 hover:bg-gray-50"
@@ -183,96 +237,122 @@ export default function ProductInfo({ product }: ProductInfoProps) {
         </div>
       )}
 
-      {/* Quantity Selector */}
-      <div className="space-y-3">
-        <label className="text-sm font-semibold text-gray-900">Quantity</label>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center border-2 border-gray-300 rounded-lg overflow-hidden">
-            <button
-              onClick={() => handleQuantityChange(-1)}
-              disabled={quantity <= 1}
-              className="p-3 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              aria-label="Decrease quantity"
-            >
-              <Minus className="w-4 h-4" />
-            </button>
-            <span className="px-8 font-semibold min-w-[60px] text-center">
-              {quantity}
-            </span>
-            <button
-              onClick={() => handleQuantityChange(1)}
-              disabled={quantity >= product.stock}
-              className="p-3 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              aria-label="Increase quantity"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
+      {/* Cart Status */}
+      {isInCart && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ShoppingCart className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-900">
+                {cartItemQuantity} {cartItemQuantity === 1 ? "item" : "items"}{" "}
+                in cart
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={handleDecrementInCart}
+                disabled={isLoading}
+                variant="outline"
+                size="icon"
+                className="h-7 w-7"
+              >
+                <Minus className="w-3 h-3" />
+              </Button>
+              <span className="font-bold text-sm min-w-[1.5rem] text-center">
+                {cartItemQuantity}
+              </span>
+              <Button
+                onClick={handleIncrementInCart}
+                disabled={cartItemQuantity >= availableStock || isLoading}
+                variant="outline"
+                size="icon"
+                className="h-7 w-7"
+              >
+                <Plus className="w-3 h-3" />
+              </Button>
+            </div>
           </div>
-          {product.stock > 0 && product.stock <= 10 && (
-            <span className="text-sm text-orange-600 font-medium">
-              Only {product.stock} left!
-            </span>
-          )}
         </div>
-      </div>
+      )}
 
       {/* Action Buttons */}
-      <div className="flex gap-4 pt-2">
+      <div className="flex gap-3 pt-2">
         <Button
           onClick={handleAddToCart}
-          disabled={product.stock === 0}
-          className="flex-1 h-12 text-base font-semibold"
+          disabled={
+            availableStock === 0 ||
+            !selectedVariant ||
+            isLoading ||
+            cartItemQuantity >= availableStock
+          }
+          className={`flex-1 h-11 text-sm font-semibold transition-all ${
+            showAddedToCart ? "bg-green-600 hover:bg-green-700" : ""
+          }`}
           size="lg"
         >
-          <ShoppingCart className="w-5 h-5 mr-2" />
-          {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
+          {showAddedToCart ? (
+            <>
+              <Check className="w-4 h-4 mr-2" />
+              Added to Cart!
+            </>
+          ) : availableStock === 0 ? (
+            "Out of Stock"
+          ) : cartItemQuantity >= availableStock ? (
+            "Max Stock Reached"
+          ) : (
+            <>
+              <ShoppingCart className="w-4 h-4 mr-2" />
+              Add to Cart
+            </>
+          )}
         </Button>
+
         <Button
           variant="outline"
           size="lg"
-          className="h-12"
+          className="h-11 w-11 p-0"
           onClick={handleAddToWishlist}
           aria-label="Add to wishlist"
         >
-          <Heart className="w-5 h-5" />
+          <Heart className="w-4 h-4" />
         </Button>
         <Button
           variant="outline"
           size="lg"
-          className="h-12"
+          className="h-11 w-11 p-0"
           onClick={handleShare}
           aria-label="Share product"
         >
-          <Share2 className="w-5 h-5" />
+          <Share2 className="w-4 h-4" />
         </Button>
       </div>
 
       {/* Features */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-gray-100 rounded-lg">
-            <Truck className="w-5 h-5 text-gray-700" />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 bg-gray-100 rounded-lg">
+            <Truck className="w-4 h-4 text-gray-700" />
           </div>
           <div>
-            <p className="text-sm font-semibold">Free Shipping</p>
+            <p className="text-xs font-semibold">Free Shipping</p>
             <p className="text-xs text-gray-600">Orders over $50</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-gray-100 rounded-lg">
-            <RefreshCw className="w-5 h-5 text-gray-700" />
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 bg-gray-100 rounded-lg">
+            <RefreshCw className="w-4 h-4 text-gray-700" />
           </div>
           <div>
-            <p className="text-sm font-semibold">Easy Returns</p>
+            <p className="text-xs font-semibold">Easy Returns</p>
             <p className="text-xs text-gray-600">30 day returns</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-gray-100 rounded-lg">
-            <Shield className="w-5 h-5 text-gray-700" />
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 bg-gray-100 rounded-lg">
+            <Shield className="w-4 h-4 text-gray-700" />
           </div>
           <div>
-            <p className="text-sm font-semibold">Secure Payment</p>
+            <p className="text-xs font-semibold">Secure Payment</p>
             <p className="text-xs text-gray-600">100% protected</p>
           </div>
         </div>

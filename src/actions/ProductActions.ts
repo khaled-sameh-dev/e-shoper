@@ -261,44 +261,20 @@ export const searchProductsWithPinecone = async ({
   }
 };
 
-export const getProducts1 = async ({
-  topK = 12,
-  query,
-  filters,
-  pageNum = 1,
-}: QueryParamsProps) => {
-  // Check if we should use Pinecone search
-  const hasQuery = query && query.trim().length > 0;
-  const hasFilters =
-    filters &&
-    (filters.categories?.length ||
-      filters.tags?.length ||
-      filters.colors?.length ||
-      filters.price);
-
-  // Use Pinecone for search queries or when filters are applied
-  if (hasQuery || hasFilters) {
-    console.log("Using Pinecone vector search, page:", pageNum);
-    return await searchProductsWithPinecone({
-      query,
-      filters,
-      topK,
-      pageNum,
-    });
-  }
-
-  // Use regular pagination for browsing all products
-  console.log("Fetching all products with pagination, page:", pageNum);
-  return await getAllProducts({ page: pageNum, limit: topK });
-};
 
 // Get single product by ID
 export const getProductById = async (id: string) => {
   try {
+    console.log("id" , id)
+
+    if(!id){
+      console.log("here")
+      return null;
+    }
     
     const product = await prisma.product.findUnique({
       where: {
-        id: id,
+        id,
         isActive: true,
       },
       include: {
@@ -391,6 +367,8 @@ export const getProductById = async (id: string) => {
             0
           )
         : 0;
+
+        console.log("product" , product)
 
     return {
       ...convertedProduct,

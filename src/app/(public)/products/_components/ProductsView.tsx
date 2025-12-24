@@ -1,6 +1,5 @@
 "use client";
 
-import { getAllProducts } from "@/actions/ProductActions";
 import { Category, Filters, Product, Tag } from "@/types";
 import { useSearchParams } from "next/navigation";
 import {

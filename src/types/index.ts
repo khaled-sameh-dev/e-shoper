@@ -165,13 +165,17 @@ export interface WishlistItem {
 }
 
 export interface CartItem {
-  id: string;
-  userId: string;
+  id?: string;
+  userId?: string;
   productId: string;
   variantId: string | null;
   quantity: number;
-  createdAt: Date;
-  updatedAt: Date;
+  attributes?: {
+    color: string | null;
+    size: string | null;
+  };
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 // ============================================================================

@@ -37,12 +37,7 @@ const SearchInput = () => {
         onChange={(e) => setValue(e.target.value)}
         className="bg-gray-100 text-gray-800 px-4 py-2 rounded focus:ring-2 focus:ring-main-blue border outline-none w-full max-w-lg"
       />
-      <button
-        type="submit"
-        className="px-4 py-2 bg-main-blue text-white rounded hover:bg-blue-600"
-      >
-        Search
-      </button>
+     
     </Form>
   );
 };
