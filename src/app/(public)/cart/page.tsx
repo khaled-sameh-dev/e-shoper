@@ -1,10 +1,12 @@
 "use client";
 
 import { useSelector, useDispatch } from "react-redux";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useUser } from "@clerk/nextjs";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Trash2,
   Plus,
@@ -12,6 +14,7 @@ import {
   ShoppingBag,
   ArrowRight,
   Loader2,
+  Lock,
 } from "lucide-react";
 import {
   selectCartItems,
@@ -19,15 +22,23 @@ import {
   updateCartItemQuantity,
   clearCart,
 } from "@/store/cartSlice";
-
 import { CartItem, Product, ProductVariant } from "@/types";
 import { getProductById } from "@/actions/ProductActions";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function CartPage() {
+  const router = useRouter();
+  const { user, isLoaded } = useUser();
+
   const dispatch = useDispatch();
   const cartItems = useSelector(selectCartItems);
   const [itemsWithProducts, setItemsWithProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    console.log("user", user);
+  }, [user]);
 
   // Fetch product data for each cart item
   useEffect(() => {
@@ -80,7 +91,6 @@ export default function CartPage() {
     fetchProductData();
   }, [cartItems]);
 
-  // Calculate totals
   const subtotal = itemsWithProducts.reduce((total, item) => {
     if (!item.product) return total;
     const price = item.product.price;
@@ -95,7 +105,7 @@ export default function CartPage() {
     return total + discountAmount * item.quantity;
   }, 0);
 
-  const shipping = 0; // Free shipping
+  const shipping = 0;
   const total = subtotal;
 
   const handleUpdateQuantity = (id: string, newQuantity: number) => {
@@ -112,6 +122,20 @@ export default function CartPage() {
       dispatch(clearCart());
     }
   };
+
+  const handleCheckout = useCallback(() => {
+    if (!isLoaded) return;
+
+    console.log("user 2" , user)
+
+    if (!user) {
+      router.push("/sign-in?redirect_url=/checkout");
+    } else {
+      console.log("checkout")
+      console.log("router", router)
+      router.push("/checkout");
+    }
+  }, [user, isLoaded]);
 
   if (loading) {
     return (
@@ -231,11 +255,6 @@ export default function CartPage() {
                                   Size: {item.attributes.size}
                                 </span>
                               )}
-                              {maxStock > 0 && maxStock <= 10 && (
-                                <span className="text-orange-600 font-medium">
-                                  Only {maxStock} left
-                                </span>
-                              )}
                             </div>
 
                             {/* Price */}
@@ -345,12 +364,23 @@ export default function CartPage() {
                 </div>
               </div>
 
-              <Link
-                href="/checkout"
-                className="block w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors mb-3 text-center"
+              {/* Auth Alert */}
+              {isLoaded && !user && (
+                <Alert className="mb-4">
+                  <Lock className="h-4 w-4" />
+                  <AlertDescription>
+                    Sign in to proceed with checkout
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <Button
+                onClick={handleCheckout}
+                className="w-full mb-3"
+                size="lg"
               >
-                Proceed to Checkout
-              </Link>
+                {!user ? "Sign In to Checkout" : "Proceed to Checkout"}
+              </Button>
 
               <Link
                 href="/products"

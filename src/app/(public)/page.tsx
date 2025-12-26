@@ -3,28 +3,27 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 import SalesBanner from "./_components/SalesBanner";
-import ProductsView from "./_components/ProductsView";
+import ProductsSlider from "./_components/ProductsView";
 import CategoriesSection from "./_components/CategoriesSection";
 import NewsletterSection from "./_components/NewsletterSection";
-import { getCategories, getProducts } from "@/actions/ProductActions";
+import {
+  getAllProducts,
+  getCategories,
+  getProducts,
+} from "@/actions/ProductActions";
 
 async function Home() {
- 
-  const { data } = await getProducts({ topK: 4 });
+  const { data } = await getAllProducts({ page: 1, limit: 8 });
   const categories = await getCategories();
 
-  console.log(data);
-
-  if (!data) return <>no products found</>;
-
   return (
-    <div className="flex flex-col w-full px-8 mx-auto md:max-w-7xl">
+    <div className="flex flex-col">
       {/* Main Content */}
-      <div className="space-y-16 mb-16">
+      <div className="space-y-20 my-16 w-full px-8 mx-auto md:max-w-7xl">
         <SalesBanner />
 
         <div className="space-y-4 container mx-auto">
-          <h1 className="text-3xl lg:text-4xl font-bold tracking-wide">
+          <h1 className="text-2xl lg:text-3xl font-bold tracking-wide">
             NEW <span className="text-main-blue/50">ARRIVALS</span>
           </h1>
 
@@ -47,7 +46,7 @@ async function Home() {
             {!data.length ? (
               <p className="text-xl font-bold text-gray-600">No Products Yet</p>
             ) : (
-              <ProductsView products={data} />
+              <ProductsSlider products={data} />
             )}
           </div>
         </div>

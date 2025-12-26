@@ -1,24 +1,19 @@
-"use client";
-
 import { Product } from "@/types";
-import ProductCard from "./ProductCard";
-import { useEffect } from "react";
+import ProductCard from "../products/_components/ProductCard";
+import CarouselContainer from "@/components/CarouselContainer";
 
 interface ProductsViewProps {
   products: Product[];
 }
-const ProductsView = ({ products }: ProductsViewProps) => {
-  useEffect(() => {
-    console.log("products", products);
-  }, [products]);
+const ProductsSlider = ({ products }: ProductsViewProps) => {
   if (!products) return;
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+    <CarouselContainer>
       {products.map((p) => (
-        <ProductCard item={p} />
+        <ProductCard item={p} key={p.id} />
       ))}
-    </div>
+    </CarouselContainer>
   );
 };
 
-export default ProductsView;
+export default ProductsSlider;

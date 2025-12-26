@@ -1,4 +1,3 @@
-import React from 'react';
 import Link from "next/link";
 import Image from "next/image";
 
@@ -17,7 +16,7 @@ interface CategoriesSectionProps {
 const CategoriesSection = ({ categories }: CategoriesSectionProps) => {
   return (
     <div className="space-y-6">
-      <h2 className="text-3xl lg:text-4xl font-bold tracking-wide">
+      <h2 className="text-2xl lg:text-3xl font-bold tracking-wide">
         SHOP BY <span className="text-main-blue/50">CATEGORY</span>
       </h2>
       
@@ -26,7 +25,7 @@ const CategoriesSection = ({ categories }: CategoriesSectionProps) => {
           <Link 
             key={category.id} 
             href={`/category/${category.slug}`}
-            className="group bg-gray-100 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col md:flex-row"
+            className="group border border-gray-400/40 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col md:flex-row"
           >
             {/* Image Column */}
             <div className="relative w-full md:w-1/2 md:h-auto max-h-80 bg-gray-200">
@@ -35,7 +34,7 @@ const CategoriesSection = ({ categories }: CategoriesSectionProps) => {
                   src={category.image}
                   alt={category.name}
                   fill
-                  className="object-cover transition-transform duration-300 group-hover:scale-105 aspect-video"
+                  className="object-cover transition-transform duration-300  aspect-video"
                   sizes="(max-width: 768px) 100vw, 50vw"
                 />
               ) : (
@@ -46,8 +45,8 @@ const CategoriesSection = ({ categories }: CategoriesSectionProps) => {
             </div>
 
             {/* Content Column */}
-            <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col justify-center">
-              <h3 className="text-2xl md:text-3xl font-bold tracking-wide uppercase mb-4">
+            <div className="w-full md:w-1/2 p-4 md:p-8 flex flex-col justify-center">
+              <h3 className="text-xl md:text-2xl font-bold tracking-wide uppercase mb-2">
                 {category.name}
               </h3>
               <p className="text-sm md:text-base text-gray-600 leading-relaxed">

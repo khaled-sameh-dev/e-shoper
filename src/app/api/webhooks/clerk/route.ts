@@ -2,72 +2,85 @@ import { Webhook } from "svix";
 import { headers } from "next/headers";
 import { WebhookEvent } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db/prisma";
+import { UserRole } from "@/types";
+
+const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET!;
 
 export async function POST(req: Request) {
-  const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
-
+  console.log("whebhook running");
   if (!WEBHOOK_SECRET) {
-    throw new Error("Please add CLERK_WEBHOOK_SECRET to .env");
+    return new Response("Missing CLERK_WEBHOOK_SECRET", { status: 500 });
   }
 
-  const headerPayload = headers();
-  const svix_id = headerPayload.get("svix-id");
-  const svix_timestamp = headerPayload.get("svix-timestamp");
-  const svix_signature = headerPayload.get("svix-signature");
+  // 1️⃣ Get Svix headers
+  const headerPayload = await headers();
+  const svixId = headerPayload.get("svix-id");
+  const svixTimestamp = headerPayload.get("svix-timestamp");
+  const svixSignature = headerPayload.get("svix-signature");
 
-  if (!svix_id || !svix_timestamp || !svix_signature) {
-    return new Response("Error occured", { status: 400 });
+  if (!svixId || !svixTimestamp || !svixSignature) {
+    return new Response("Missing svix headers", { status: 400 });
   }
 
-  const payload = await req.json();
-  const body = JSON.stringify(payload);
+  // 2️⃣ Get raw body
+  const payload = await req.text();
 
+  // 3️⃣ Verify webhook
   const wh = new Webhook(WEBHOOK_SECRET);
-  let evt: WebhookEvent;
+  let event: WebhookEvent;
 
   try {
-    evt = wh.verify(body, {
-      "svix-id": svix_id,
-      "svix-timestamp": svix_timestamp,
-      "svix-signature": svix_signature,
+    event = wh.verify(payload, {
+      "svix-id": svixId,
+      "svix-timestamp": svixTimestamp,
+      "svix-signature": svixSignature,
     }) as WebhookEvent;
   } catch (err) {
-    console.error("Error verifying webhook:", err);
-    return new Response("Error occured", { status: 400 });
+    console.error("Webhook verification failed:", err);
+    return new Response("Invalid signature", { status: 400 });
   }
 
-  const eventType = evt.type;
+  // 4️⃣ Handle events
+  switch (event.type) {
+    case "user.created": {
+      const user = event.data;
+      console.log("user created", user);
 
-  if (eventType === "user.created") {
-    const { id, email_addresses, first_name, last_name, image_url } = evt.data;
+      await prisma.user.create({
+        data: {
+          clerkId: user.id,
+          email: user.email_addresses[0].email_address,
+          name: user.username || "New Customer",
+          role: UserRole.CUSTOMER,
+        },
+      });
+      break;
+    }
 
-    await prisma.user.create({
-      data: {
-        clerkId: id,
-        email: email_addresses[0].email_address,
-        name: `${first_name || ""} ${last_name || ""}`.trim(),
-        image: image_url,
-      },
-    });
+    case "user.updated": {
+      const user = event.data;
+
+      await prisma.user.update({
+        where: { clerkId: user.id },
+        data: {
+          email: user.email_addresses[0].email_address,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          image: user.image_url,
+        },
+      });
+      break;
+    }
+
+    case "user.deleted": {
+      const user = event.data;
+
+      await prisma.user.delete({
+        where: { clerkId: user.id },
+      });
+      break;
+    }
   }
 
-  if (eventType === "user.updated") {
-    const { id, email_addresses, first_name, last_name, image_url } = evt.data;
-
-    await prisma.user.update({
-      where: { clerkId: id },
-      data: {
-        email: email_addresses[0].email_address,
-        name: `${first_name || ""} ${last_name || ""}`.trim(),
-        image: image_url,
-      },
-    });
-  }
-
-  if (eventType === "user.deleted") {
-    const { id } = evt.data;
-    await prisma.user.delete({ where: { clerkId: id } });
-  }
-
-  return new Response("", { status: 200 });
+  return new Response("OK", { status: 200 });
 }

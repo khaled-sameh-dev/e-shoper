@@ -1,95 +1,75 @@
 "use client";
+
+import { motion } from "framer-motion";
 import Container from "./Container";
+import ClerkController from "./ClerkController";
 import Logo from "./Logo";
-import { Button } from "../ui/button";
-import { PackageIcon, ShoppingBag, ShoppingBasket } from "lucide-react";
-
 import SearchInput from "./SearchInput";
-import Link from "next/link";
-import {
-  ClerkLoaded,
-  SignedIn,
-  SignInButton,
-  UserButton,
-  useUser,
-} from "@clerk/nextjs";
-import { useSelector } from "react-redux";
-import { selectCartItemsCount } from "@/store/cartSlice";
-
-const CartIcon = () => {
-  const cartCount = useSelector(selectCartItemsCount);
-
-  return (
-    <Button variant={"link"} className="hover:text-light-green cursor-pointer">
-      <Link href={"/cart"} className="relative group">
-        <ShoppingBag className="h-8 w-8" />
-        <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-dark-green text-white flex items-center justify-center text-xs font-bold">
-          {cartCount}
-        </span>
-      </Link>
-    </Button>
-  );
-};
+import BasketButton from "./BasketButton";
 
 const Header = () => {
-  const { user } = useUser();
-  const cartCount = useSelector(selectCartItemsCount);
-
   return (
-    <header className="w-full px-8 mx-auto xl:px-0 py-4 bg-white">
+    <motion.header
+      className="w-full px-8 mx-auto xl:px-0 py-4 bg-white border-b"
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      transition={{ type: "spring", stiffness: 100, damping: 20 }}
+    >
       <Container classname="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-        <div className="flex-1 flex items-center justify-between gap-8">
+        <motion.div
+          className="flex-1 flex items-center justify-between gap-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
           <Logo />
-          <SearchInput />
-        </div>
 
-        <div className="flex-1 flex items-center justify-center gap-4 sm:max-w-max">
-          <Button
-            variant={"link"}
-            className="relative bg-main-blue px-4 py-2 text-white rounded hover:bg-main-blue/80 flex-1"
+          <motion.div
+            className="hidden sm:flex w-full"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
           >
-            <span className=" absolute -top-1 -right-1 text-xs font-semibold bg-notify-red rounded-full flex items-center justify-center w-4 h-4">
-              {cartCount}
-            </span>
-            <Link href={"/cart"} className="flex items-center gap-2">
-              <ShoppingBasket className="w-5 h-5" />
-              <span>My Basket</span>
-            </Link>
-          </Button>
+            <SearchInput />
+          </motion.div>
 
-          <ClerkLoaded>
-            <SignedIn>
-              <Button
-                variant={"link"}
-                className="bg-main-blue px-4 py-2 text-white rounded hover:bg-main-blue/80 flex-1"
+          <div className="flex sm:hidden">
+            <div className="flex-1 flex items-center justify-end gap-4 sm:max-w-max">
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                <Link href={"/"} className="flex items-center gap-2">
-                  <PackageIcon className="w-5 h-5" />
-                  <span>My Orders</span>
-                </Link>
-              </Button>
-            </SignedIn>
+                <BasketButton />
+              </motion.div>
 
-            {user ? (
-              <div className="flex items-center gap-4">
-                <UserButton />
+              <ClerkController />
+            </div>
+          </div>
+        </motion.div>
 
-                <div className="hidden md:block ">
-                  <p className="font-bold">Welcom Back!</p>
-                  <p className="font-semibold text-gray-500">{user.fullName}</p>
-                </div>
-              </div>
-            ) : (
-              <div className="flex-1">
-                <SignInButton mode="modal">
-                  <Button className="w-full">Login</Button>
-                </SignInButton>
-              </div>
-            )}
-          </ClerkLoaded>
-        </div>
+        <motion.div
+          className="hidden flex-1 sm:flex items-center justify-end gap-4 sm:max-w-max"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+        >
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <BasketButton />
+          </motion.div>
+
+          <ClerkController />
+        </motion.div>
+
+        <motion.div
+          className="flex sm:hidden w-full"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.5 }}
+        >
+          <SearchInput />
+        </motion.div>
       </Container>
-    </header>
+    </motion.header>
   );
 };
 

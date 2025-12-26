@@ -19,9 +19,7 @@ export async function POST(req: NextRequest) {
     if(!hasQuery && !filters){
       return await fetchAllProducts(cursor, limit);
     }
-
-    console.log("found filter or query")
-    console.log("filters" , filters)
+    
     return await fetchProductsWithVector(query || "", filters, cursor, limit);
 
   } catch (err) {

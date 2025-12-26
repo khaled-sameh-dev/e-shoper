@@ -46,6 +46,7 @@ export const getAllProducts = async (params?: ProductsParamsProps) => {
     getProductsCountFromDB(where),
   ]);
 
+
   if (!products.length && page === 1) {
     return {
       data: [],
@@ -57,6 +58,7 @@ export const getAllProducts = async (params?: ProductsParamsProps) => {
       },
     };
   }
+  
 
   return {
     data: products,
@@ -69,37 +71,6 @@ export const getAllProducts = async (params?: ProductsParamsProps) => {
   };
 };
 
-
-
-export const getProducts = async ({
-  topK = 12,
-  query,
-  filters,
-  pageNum = 1,
-  limit = 12
-}: QueryParamsProps) => {
-  // Check if we should use Pinecone search
-  const hasQuery = query && query.trim().length > 0;
-  const hasFilters =
-    filters &&
-    (filters.categories?.length ||
-      filters.tags?.length ||
-      filters.colors?.length ||
-      filters.price);
-
-  // Use Pinecone for search queries or when filters are applied
-  if (hasQuery || hasFilters) {
-    console.log("Using Pinecone vector search, page:", pageNum);
-    return await searchProductsWithPinecone({
-      query,
-      filters,
-      topK,
-      pageNum,
-    });
-  }
-  
-  return await getAllProducts({ page: pageNum, limit });
-};
 
 const generateEmbedding = async (text: string): Promise<number[]> => {
   try {
@@ -212,10 +183,14 @@ export const searchProductsWithPinecone = async ({
       },
     });
 
+    console.log("products" , products)
+
     // Sort products by Pinecone relevance score
     const sortedProducts = productIds
       .map((id) => products.find((p) => p.id === id))
       .filter((p): p is NonNullable<typeof p> => p !== null);
+
+
 
     // Convert Decimal fields to numbers and calculate stock
     const convertedProducts = sortedProducts.map((product) => {
@@ -265,10 +240,8 @@ export const searchProductsWithPinecone = async ({
 // Get single product by ID
 export const getProductById = async (id: string) => {
   try {
-    console.log("id" , id)
 
     if(!id){
-      console.log("here")
       return null;
     }
     
@@ -368,8 +341,6 @@ export const getProductById = async (id: string) => {
           )
         : 0;
 
-        console.log("product" , product)
-
     return {
       ...convertedProduct,
       category: product.category,
@@ -436,296 +407,3 @@ export const getTags = async (): Promise<Tag[]> => {
     return [];
   }
 };
-
-
-
-// "use server";
-
-// import { prisma } from "@/lib/db/prisma";
-// import { Category, Tag } from "@/types";
-// import { convertProductVariant } from "@/lib/utils";
-// import {
-//   getAllProductsFromDB,
-//   getProductsCountFromDB,
-// } from "@/lib/db/product.model";
-
-// interface ProductsParamsProps {
-//   page?: number;
-//   limit?: number;
-// }
-
-// // ============================================
-// // Get all products with pagination (no filters)
-// // ============================================
-// export const getAllProducts = async (params?: ProductsParamsProps) => {
-//   const page = params?.page ?? 1;
-//   const limit = params?.limit ?? 12;
-
-//   if (page < 1) {
-//     throw new Error("VALIDATION_ERROR: Page must be >= 1");
-//   }
-
-//   const skip = (page - 1) * limit;
-//   const where = { isActive: true };
-
-//   try {
-//     const [products, total] = await Promise.all([
-//       getAllProductsFromDB(where, { take: limit, skip }),
-//       getProductsCountFromDB(where),
-//     ]);
-
-//     if (!products.length && page === 1) {
-//       return {
-//         data: [],
-//         pagination: {
-//           page: 1,
-//           pageSize: limit,
-//           totalItems: 0,
-//           hasMore: false,
-//         },
-//       };
-//     }
-
-//     return {
-//       data: products,
-//       pagination: {
-//         page,
-//         pageSize: limit,
-//         totalItems: total,
-//         hasMore: page < Math.ceil(total / limit),
-//       },
-//     };
-//   } catch (error) {
-//     console.error("Error in getAllProducts:", error);
-//     throw new Error(
-//       `Failed to fetch products: ${
-//         error instanceof Error ? error.message : "Unknown error"
-//       }`
-//     );
-//   }
-// };
-
-// // ============================================
-// // Get single product by ID
-// // ============================================
-// export const getProductById = async (id: string) => {
-//   try {
-//     const product = await prisma.product.findUnique({
-//       where: {
-//         id: id,
-//         isActive: true,
-//       },
-//       include: {
-//         category: true,
-//         variants: {
-//           orderBy: {
-//             createdAt: "asc",
-//           },
-//         },
-//         tags: {
-//           include: {
-//             tag: true,
-//           },
-//         },
-//         reviews: {
-//           take: 10,
-//           orderBy: {
-//             createdAt: "desc",
-//           },
-//           include: {
-//             user: {
-//               select: {
-//                 name: true,
-//                 image: true,
-//               },
-//             },
-//           },
-//         },
-//       },
-//     });
-
-//     if (!product) {
-//       return null;
-//     }
-
-//     // Convert variants
-//     const convertedVariants = product.variants.map(convertProductVariant);
-
-//     // Extract unique sizes from variants
-//     const sizes = Array.from(
-//       new Set(
-//         convertedVariants
-//           .map((v) => v.size)
-//           .filter((size): size is string => size !== null)
-//       )
-//     );
-
-//     // Extract unique colors from variants
-//     const colors = Array.from(
-//       new Set(
-//         convertedVariants
-//           .map((v) => v.color)
-//           .filter((color): color is string => color !== null)
-//       )
-//     );
-
-//     // Extract tag names
-//     const tags = product.tags.map((pt) => pt.tag.name);
-
-//     // Calculate average rating from reviews
-//     const rating =
-//       product.reviews.length > 0
-//         ? product.reviews.reduce((acc, review) => acc + review.rating, 0) /
-//           product.reviews.length
-//         : 0;
-
-//     // Format reviews
-//     const reviews = product.reviews.map((review) => ({
-//       id: review.id,
-//       author: review.user.name || "Anonymous",
-//       authorImage: review.user.image,
-//       rating: review.rating,
-//       title: review.title,
-//       comment: review.comment,
-//       images: review.images,
-//       isVerified: review.isVerified,
-//       date: new Date(review.createdAt).toLocaleDateString("en-US", {
-//         year: "numeric",
-//         month: "long",
-//         day: "numeric",
-//       }),
-//     }));
-
-//     // Calculate total stock
-//     const totalStock =
-//       convertedVariants.length > 0
-//         ? convertedVariants.reduce(
-//             (acc, variant) => acc + (variant.stock || 0),
-//             0
-//           )
-//         : 0;
-
-//     return {
-//       ...product,
-//       category: product.category,
-//       variants: convertedVariants,
-//       tags,
-//       colors,
-//       sizes,
-//       stock: totalStock,
-//       rating: Math.round(rating * 10) / 10,
-//       reviewCount: product.reviews.length,
-//       reviews,
-//     };
-//   } catch (error) {
-//     console.error("Error fetching product by ID:", error);
-//     throw new Error(
-//       `Error fetching product: ${
-//         error instanceof Error ? error.message : "Unknown error"
-//       }`
-//     );
-//   }
-// };
-
-// // ============================================
-// // Get all categories
-// // ============================================
-// export const getCategories = async (): Promise<Category[]> => {
-//   try {
-//     const categories = await prisma.category.findMany({
-//       orderBy: {
-//         name: "asc",
-//       },
-//       select: {
-//         id: true,
-//         name: true,
-//         slug: true,
-//         description: true,
-//         image: true,
-//         createdAt: true,
-//         updatedAt: true,
-//       },
-//     });
-
-//     return categories as Category[];
-//   } catch (error) {
-//     console.error("Error fetching categories:", error);
-//     return [];
-//   }
-// };
-
-// // ============================================
-// // Get all tags
-// // ============================================
-// export const getTags = async (): Promise<Tag[]> => {
-//   try {
-//     const tags = await prisma.tag.findMany({
-//       orderBy: {
-//         name: "asc",
-//       },
-//       select: {
-//         id: true,
-//         name: true,
-//         slug: true,
-//         createdAt: true,
-//       },
-//     });
-
-//     return tags as Tag[];
-//   } catch (error) {
-//     console.error("Error fetching tags:", error);
-//     return [];
-//   }
-// };
-
-// // ============================================
-// // Get available sizes (from all variants)
-// // ============================================
-// export const getAvailableSizes = async (): Promise<string[]> => {
-//   try {
-//     const variants = await prisma.productVariant.findMany({
-//       where: {
-//         size: { not: null },
-//         stock: { gt: 0 },
-//       },
-//       select: {
-//         size: true,
-//       },
-//       distinct: ["size"],
-//     });
-
-//     return variants
-//       .map((v) => v.size)
-//       .filter((size): size is string => size !== null)
-//       .sort();
-//   } catch (error) {
-//     console.error("Error fetching sizes:", error);
-//     return [];
-//   }
-// };
-
-// // ============================================
-// // Get available colors (from all variants)
-// // ============================================
-// export const getAvailableColors = async (): Promise<string[]> => {
-//   try {
-//     const variants = await prisma.productVariant.findMany({
-//       where: {
-//         color: { not: null },
-//         stock: { gt: 0 },
-//       },
-//       select: {
-//         color: true,
-//       },
-//       distinct: ["color"],
-//     });
-
-//     return variants
-//       .map((v) => v.color)
-//       .filter((color): color is string => color !== null)
-//       .sort();
-//   } catch (error) {
-//     console.error("Error fetching colors:", error);
-//     return [];
-//   }
-// };

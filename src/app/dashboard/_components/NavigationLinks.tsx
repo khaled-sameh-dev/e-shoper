@@ -1,5 +1,5 @@
 "use client";
-import AnimatedToggleText from "@/app/(public)/_components/AnimatedToggleText";
+import AnimatedToggleText from "@/components/AnimatedToggleText";
 import { motion } from "framer-motion";
 import {
   BoxIcon,

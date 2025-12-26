@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { ChevronsRightIcon } from "lucide-react";
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import AnimatedToggleText from "@/app/(public)/_components/AnimatedToggleText";
+import AnimatedToggleText from "@/components/AnimatedToggleText";
 
 const DashboardHeader = () => {
   const pathname = usePathname();

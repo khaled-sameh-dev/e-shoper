@@ -1,13 +1,13 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import AnimatedToggleText from "../../_components/AnimatedToggleText";
+import AnimatedToggleText from "../../../../components/AnimatedToggleText";
 import { ChevronDown } from "lucide-react";
 import { ReactNode } from "react";
 

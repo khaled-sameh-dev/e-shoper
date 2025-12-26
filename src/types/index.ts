@@ -352,3 +352,36 @@ export interface Filters {
   colors?: string[];
   priceRange?: [number, number];
 }
+
+export interface CheckoutFormData {
+  email: string;
+  shippingAddress: {
+    fullName: string;
+    addressLine1: string;
+    addressLine2?: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+    phone: string;
+  };
+  billingAddress?: {
+    fullName: string;
+    addressLine1: string;
+    addressLine2?: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  };
+  useSameAddress: boolean;
+  shippingMethod: "standard" | "express" | "overnight";
+}
+
+export interface CheckoutSession {
+  id: string;
+  url: string;
+  customer_email: string;
+  amount_total: number;
+  currency: string;
+}

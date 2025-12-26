@@ -122,13 +122,13 @@ export default function ProductInfo({ product }: ProductInfoProps) {
   const isInCart = cartItemQuantity > 0;
 
   return (
-    <div className="space-y-5 max-w-2xl">
+    <div className="space-y-8 max-w-2xl">
       {/* Title and Rating */}
       <div>
         <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
           {product.name}
         </h1>
-        <div className="flex items-center gap-3 mb-2">
+        <div className="flex items-center gap-3">
           <div className="flex items-center gap-1">
             {[...Array(5)].map((_, i) => (
               <Star
@@ -170,18 +170,13 @@ export default function ProductInfo({ product }: ProductInfoProps) {
       </div>
 
       {/* Stock Status */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-4">
         <Badge
           variant={availableStock > 0 ? "default" : "destructive"}
           className="text-xs px-2 py-0.5"
         >
           {availableStock > 0 ? `${availableStock} in stock` : "Out of stock"}
         </Badge>
-        {availableStock > 0 && availableStock <= 10 && (
-          <span className="text-xs text-orange-600 font-medium">
-            🔥 Low stock - order soon!
-          </span>
-        )}
       </div>
 
       {/* Description */}
@@ -191,17 +186,17 @@ export default function ProductInfo({ product }: ProductInfoProps) {
 
       {/* Color Selection */}
       {product.colors.length > 0 && (
-        <div className="space-y-2">
-          <label className="text-sm font-semibold text-gray-900">
-            Color:{" "}
-            <span className="font-normal text-gray-600">{selectedColor}</span>
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-semibold text-gray-900 mb-6">
+            Color:
+            <span className="font-normal text-gray-600 ml-2">{selectedColor}</span>
           </label>
           <div className="flex gap-2 flex-wrap">
             {product.colors.map((color) => (
               <button
                 key={color}
                 onClick={() => setSelectedColor(color)}
-                className={`w-10 h-10 rounded-full border-2 transition-all ${
+                className={`w-8 h-8 rounded-lg border-2 transition-all ${
                   selectedColor === color
                     ? "border-black ring-2 ring-black ring-offset-2 scale-105"
                     : "border-gray-300 hover:border-gray-400 hover:scale-105"
@@ -217,7 +212,7 @@ export default function ProductInfo({ product }: ProductInfoProps) {
 
       {/* Size Selection */}
       {product.sizes.length > 0 && (
-        <div className="space-y-2">
+        <div className="flex items-center justify-between">
           <label className="text-sm font-semibold text-gray-900">Size</label>
           <div className="flex gap-2 flex-wrap">
             {product.sizes.map((size) => (

@@ -9,14 +9,15 @@ import {
   useTransition,
   useCallback,
 } from "react";
-import ProductSkeleton from "./skeleton/ProductSkeleton";
+
 import { Button } from "@/components/ui/button";
-import ProductsGrid from "../../_components/ProductsGrid";
-import ProductsToolbar from "../../_components/ProductsToolbar";
+import ProductsToolbar from "./ProductsToolbar";
 import { useFilter } from "@/hooks/use-filter";
 import ErrorState from "./ErrorState";
 import EmptyState from "./EmptyState";
 import { sortProducts } from "@/lib/sortProducts";
+import ProductsGrid from "./ProductsGrid";
+import ProductSkeleton from "./skeleton/ProductSkeleton";
 
 const LIMIT_PER_PAGE = 12;
 
@@ -116,8 +117,12 @@ const ProductsView = ({ categories, tags }: ProductsViewProps) => {
 
   const sortedProducts = useMemo(
     () => sortProducts(products, sortBy),
-    [products , sortBy]
+    [products, sortBy]
   );
+
+  useEffect(() => {
+    console.log("pro", sortedProducts);
+  }, [sortedProducts]);
 
   if (loading && sortedProducts.length === 0) {
     return (

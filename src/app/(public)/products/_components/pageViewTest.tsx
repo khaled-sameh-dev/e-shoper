@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Category, Filters, Product, Tag } from "@/types";
@@ -13,7 +12,7 @@ import {
 import ProductSkeleton from "./skeleton/ProductSkeleton";
 import { Button } from "@/components/ui/button";
 import ProductsGrid from "../../_components/ProductsGrid";
-import ProductsToolbar from "../../_components/ProductsToolbar";
+import ProductsToolbar from "./ProductsToolbar";
 import { useFilter } from "@/hooks/use-filter";
 import ErrorState from "./ErrorState";
 import EmptyState from "./EmptyState";
@@ -77,7 +76,7 @@ const ProductsView = ({ categories, tags }: ProductsViewProps) => {
         const res = await fetch(`/api/search`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({...payload , hasActiveFilters}),
+          body: JSON.stringify({ ...payload, hasActiveFilters }),
         });
 
         if (!res.ok) throw new Error("Failed to fetch products");

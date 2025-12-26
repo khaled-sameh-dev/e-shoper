@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import ProductCard from "../../_components/ProductCard";
+import ProductCard from "./ProductCard";
 
 interface ProductsClientProps {
   initialProducts: any[];
@@ -16,7 +16,13 @@ interface ProductsClientProps {
 }
 
 // Filter Sidebar Component
-const FilterSidebar = ({ categories, tags, onFilterChange, isOpen, onClose }: any) => {
+const FilterSidebar = ({
+  categories,
+  tags,
+  onFilterChange,
+  isOpen,
+  onClose,
+}: any) => {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState([0, 1000]);
@@ -25,7 +31,7 @@ const FilterSidebar = ({ categories, tags, onFilterChange, isOpen, onClose }: an
     onFilterChange({
       categories: selectedCategories,
       tags: selectedTags,
-      priceRange
+      priceRange,
     });
   }, [selectedCategories, selectedTags, priceRange]);
 
@@ -52,22 +58,22 @@ const FilterSidebar = ({ categories, tags, onFilterChange, isOpen, onClose }: an
   };
 
   return (
-    <div className={`${isOpen ? 'block' : 'hidden'} lg:block`}>
+    <div className={`${isOpen ? "block" : "hidden"} lg:block`}>
       <div className="space-y-6 bg-white rounded-lg shadow-sm p-6">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold">Filters</h2>
           <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={clearFilters}
               className="text-xs"
             >
               Clear All
             </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={onClose}
               className="lg:hidden"
             >
@@ -131,8 +137,8 @@ const FilterSidebar = ({ categories, tags, onFilterChange, isOpen, onClose }: an
                   onClick={() => handleTagChange(tag.id)}
                   className={`px-3 py-1 rounded-full text-xs font-semibold border-2 transition-all ${
                     selectedTags.includes(tag.id)
-                      ? 'bg-black text-white border-black'
-                      : 'bg-gray-100 text-black border-gray-300 hover:border-black'
+                      ? "bg-black text-white border-black"
+                      : "bg-gray-100 text-black border-gray-300 hover:border-black"
                   }`}
                 >
                   {tag.name}
@@ -151,7 +157,7 @@ function ProductsClient({
   initialProducts,
   initialTotal,
   categories,
-  tags
+  tags,
 }: ProductsClientProps) {
   const [products, setProducts] = useState(initialProducts);
   const [total, setTotal] = useState(initialTotal);
@@ -160,7 +166,7 @@ function ProductsClient({
   const [filters, setFilters] = useState<any>({
     categories: [],
     tags: [],
-    priceRange: [0, 1000]
+    priceRange: [0, 1000],
   });
   const [sortBy, setSortBy] = useState("featured");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -177,19 +183,19 @@ function ProductsClient({
     }
 
     setIsSearching(true);
-    
+
     try {
-      const response = await fetch('/api/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+      const response = await fetch("/api/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           query: searchQuery,
           filters: {
             categories: filters.categories,
             tags: filters.tags,
-            priceRange: filters.priceRange
-          }
-        })
+            priceRange: filters.priceRange,
+          },
+        }),
       });
 
       if (response.ok) {
@@ -198,21 +204,23 @@ function ProductsClient({
         setTotal(data.total || 0);
         setIsUsingSemanticSearch(true);
       } else {
-        console.error('Search failed:', response.statusText);
+        console.error("Search failed:", response.statusText);
         // Fallback to simple text search on client side
-        const filtered = initialProducts.filter(p => 
-          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.description.toLowerCase().includes(searchQuery.toLowerCase())
+        const filtered = initialProducts.filter(
+          (p) =>
+            p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            p.description.toLowerCase().includes(searchQuery.toLowerCase())
         );
         setProducts(filtered);
         setTotal(filtered.length);
       }
     } catch (error) {
-      console.error('Search error:', error);
+      console.error("Search error:", error);
       // Fallback to simple text search
-      const filtered = initialProducts.filter(p => 
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.description.toLowerCase().includes(searchQuery.toLowerCase())
+      const filtered = initialProducts.filter(
+        (p) =>
+          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.description.toLowerCase().includes(searchQuery.toLowerCase())
       );
       setProducts(filtered);
       setTotal(filtered.length);
@@ -230,39 +238,42 @@ function ProductsClient({
 
     // Apply category filter
     if (filters.categories.length > 0) {
-      filtered = filtered.filter(p => 
+      filtered = filtered.filter((p) =>
         filters.categories.includes(p.categoryId)
       );
     }
 
     // Apply tag filter
     if (filters.tags.length > 0) {
-      filtered = filtered.filter(p => 
-        p.tags && p.tags.some((tag: string) => filters.tags.includes(tag))
+      filtered = filtered.filter(
+        (p) =>
+          p.tags && p.tags.some((tag: string) => filters.tags.includes(tag))
       );
     }
 
     // Apply price filter
     if (filters.priceRange) {
-      filtered = filtered.filter(p => 
-        p.price >= filters.priceRange[0] && p.price <= filters.priceRange[1]
+      filtered = filtered.filter(
+        (p) =>
+          p.price >= filters.priceRange[0] && p.price <= filters.priceRange[1]
       );
     }
 
     // Apply sorting
     switch (sortBy) {
-      case 'price-low':
+      case "price-low":
         filtered.sort((a, b) => a.price - b.price);
         break;
-      case 'price-high':
+      case "price-high":
         filtered.sort((a, b) => b.price - a.price);
         break;
-      case 'name':
+      case "name":
         filtered.sort((a, b) => a.name.localeCompare(b.name));
         break;
-      case 'newest':
-        filtered.sort((a, b) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      case "newest":
+        filtered.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
         break;
     }
@@ -298,11 +309,11 @@ function ProductsClient({
 
           {/* Mobile Filter Overlay */}
           {isFilterOpen && (
-            <div 
-              className="fixed inset-0 bg-black/50 z-40 lg:hidden" 
+            <div
+              className="fixed inset-0 bg-black/50 z-40 lg:hidden"
               onClick={() => setIsFilterOpen(false)}
             >
-              <div 
+              <div
                 className="fixed left-0 top-0 bottom-0 w-80 bg-white overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -331,7 +342,7 @@ function ProductsClient({
                     placeholder="Search products using natural language... (e.g., 'wireless headphones for running')"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                     className="pl-10 pr-10 py-6 text-base"
                   />
                   {searchQuery && (
@@ -343,7 +354,7 @@ function ProductsClient({
                     </button>
                   )}
                 </div>
-                <Button 
+                <Button
                   onClick={handleSearch}
                   disabled={isSearching}
                   className="px-8"
@@ -354,7 +365,7 @@ function ProductsClient({
                       Searching...
                     </>
                   ) : (
-                    'Search'
+                    "Search"
                   )}
                 </Button>
               </div>
@@ -369,8 +380,8 @@ function ProductsClient({
             <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex items-center gap-4">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="lg:hidden"
                     onClick={() => setIsFilterOpen(true)}
                   >
@@ -378,13 +389,14 @@ function ProductsClient({
                     Filters
                   </Button>
                   <p className="text-sm text-gray-600">
-                    Showing <span className="font-semibold">{total}</span> result{total !== 1 ? 's' : ''}
+                    Showing <span className="font-semibold">{total}</span>{" "}
+                    result{total !== 1 ? "s" : ""}
                   </p>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <label className="text-sm text-gray-600">Sort by:</label>
-                  <select 
+                  <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
                     className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-black"
@@ -403,8 +415,12 @@ function ProductsClient({
             <div className="bg-white rounded-lg shadow-sm p-6">
               {products.length === 0 ? (
                 <div className="text-center py-16">
-                  <p className="text-gray-500 text-lg mb-2">No products found</p>
-                  <p className="text-gray-400 text-sm">Try adjusting your search or filters</p>
+                  <p className="text-gray-500 text-lg mb-2">
+                    No products found
+                  </p>
+                  <p className="text-gray-400 text-sm">
+                    Try adjusting your search or filters
+                  </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -421,4 +437,4 @@ function ProductsClient({
   );
 }
 
-export default ProductsClient
+export default ProductsClient;

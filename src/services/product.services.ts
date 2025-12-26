@@ -50,14 +50,12 @@ export async function fetchProductsWithVector(
     // Build Pinecone filter object
     const pineconeFilter = buildPineconeFilter(filters);
 
-    console.log("pinecone filter", pineconeFilter);
+    
     const pineconeResult = await queryVector(
       vectorQuery,
       topK,
       Object.keys(pineconeFilter).length > 0 ? pineconeFilter : undefined
     );
-
-    console.log("pinecone results", pineconeResult);
 
     if (!pineconeResult.matches || !pineconeResult.matches.length) {
       return NextResponse.json({
@@ -83,9 +81,6 @@ export async function fetchProductsWithVector(
       }
     }
 
-    console.log("match results", matchesResults);
-    console.log("match results length", totalMatches);
-
     if (!matchesResults.length) {
       return NextResponse.json({
         products: [],
@@ -94,18 +89,18 @@ export async function fetchProductsWithVector(
     }
 
     const pageResults = matchesResults.slice(0, limit);
-    console.log("page", pageResults);
+    
     const hasMore = matchesResults.length > limit;
 
-    console.log("has more", hasMore);
+    
 
     const lastItem = pageResults[pageResults.length - 1];
-    console.log("cursor", cursor);
+    
     const nextCursor = hasMore
       ? createCursor({ id: lastItem.id, score: lastItem.score || 0 })
       : null;
 
-    console.log("cursor", nextCursor);
+  
     const productsPromises = pageResults.map((item) =>
       getProductById(item.id).catch((err) => {
         console.error(`Failed to fetch product ${item.id}:`, err);
@@ -131,7 +126,6 @@ export async function fetchProductsWithVector(
   }
 }
 
-// Helper: Parse cursor string
 function parseCursor(cursor: string): { id: string; score: number } | null {
   try {
     const [id, scoreStr] = cursor.split(":");

@@ -13,9 +13,8 @@ import {
 import Link from "next/link";
 import UserDropdown from "./UserDropdown";
 import { usePathname } from "next/navigation";
-import AnimatedToggleText from "@/app/(public)/_components/AnimatedToggleText";
+import AnimatedToggleText from "@/components/AnimatedToggleText";
 import NavigationLinks from "./NavigationLinks";
-
 
 const DashboardSidebar = () => {
   const { open } = useSidebar();
@@ -35,7 +34,7 @@ const DashboardSidebar = () => {
       <SidebarContent>
         <SidebarGroup>
           <SidebarMenu>
-            <NavigationLinks showText={open}/>
+            <NavigationLinks showText={open} />
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
