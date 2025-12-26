@@ -12,7 +12,8 @@ import { Button } from "@/components/ui/button";
 
 import { AVAILABLE_SIZES, MAIN_COLORS } from "@/types/contants";
 import { useFilter } from "@/hooks/use-filter";
-import CollapsibleFilter from "../products/_components/CollapsibleFilter";
+import CollapsibleFilter from "./CollapsibleFilter";
+
 
 interface FilterSidebarProps {
   categories: Category[];

@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
-import ProductBreadcrumb from "../_components/ProductBreadcrumb";
-import ProductImageGallery from "../_components/ProductImageGallery";
-import ProductInfo from "../_components/ProductInfo";
+import ProductBreadcrumb from "./_components/ProductBreadcrumb";
+import ProductImageGallery from "./_components/ProductImageGallery";
+import ProductInfo from "./_components/ProductInfo";
 import ProductTabs from "../_components/ProductTabs";
 
 import { getProductById } from "@/actions/ProductActions";
