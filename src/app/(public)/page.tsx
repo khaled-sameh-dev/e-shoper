@@ -9,7 +9,6 @@ import NewsletterSection from "./_components/NewsletterSection";
 import {
   getAllProducts,
   getCategories,
-  getProducts,
 } from "@/actions/ProductActions";
 
 async function Home() {

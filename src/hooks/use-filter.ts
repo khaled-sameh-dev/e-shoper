@@ -1,31 +1,3 @@
-// import { toggleFilterValue } from "@/lib/utils";
-// import { clearAllFilters, updateFilter } from "@/store/filterSlice";
-// import { RootState } from "@/store/store";
-// import { useDispatch, useSelector } from "react-redux";
-
-// export const useFilter = () => {
-//   const dispatch = useDispatch();
-//   const filters = useSelector((state: RootState) => state.filter.filters);
-
-//   const toggleFilter = (key: keyof typeof filters, value: string) => {
-//     dispatch(
-//       updateFilter({
-//         [key]: toggleFilterValue(filters[key] as string[], value),
-//       })
-//     );
-//   };
-
-//   const setRange = (range: [number, number]) => {
-
-//     dispatch(updateFilter({ priceRange: range }));
-//   };
-
-//   const clearFilters = () => {
-//     dispatch(clearAllFilters());
-//   };
-
-//   return { filters, setRange, toggleFilter, clearFilters };
-// };
 
 import { toggleFilterValue } from "@/lib/utils";
 import { clearAllFilters, updateFilter } from "@/store/filterSlice";
@@ -93,7 +65,10 @@ export const useFilter = () => {
       payload.colors = filters.colors;
     }
 
-    if ((filters.priceRange?.[0] ?? 0) > 0 || (filters.priceRange?.[1] ?? 1000) < 1000) {
+    if (
+      (filters.priceRange?.[0] ?? 0) > 0 ||
+      (filters.priceRange?.[1] ?? 1000) < 1000
+    ) {
       payload.priceRange = filters.priceRange;
     }
 
@@ -110,7 +85,10 @@ export const useFilter = () => {
     count += filters.colors?.length ?? 0;
 
     // Count price range as 1 if it's not default
-    if ((filters.priceRange?.[0] ?? 0) > 0 || (filters.priceRange?.[1] ?? 1000) < 1000) {
+    if (
+      (filters.priceRange?.[0] ?? 0) > 0 ||
+      (filters.priceRange?.[1] ?? 1000) < 1000
+    ) {
       count += 1;
     }
 
@@ -122,12 +100,14 @@ export const useFilter = () => {
     (key: keyof typeof filters, value: string) => {
       const filterArray = filters[key];
       if (Array.isArray(filterArray)) {
-        return filterArray.includes(value);
+        return (filterArray as string[]).includes(value) ;
       }
       return false;
     },
     [filters]
   );
+
+ 
 
   // Set multiple filters at once (for bulk operations)
   const setFilters = useCallback(

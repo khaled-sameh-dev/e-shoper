@@ -64,8 +64,7 @@ export async function POST(req: Request) {
         where: { clerkId: user.id },
         data: {
           email: user.email_addresses[0].email_address,
-          firstName: user.first_name,
-          lastName: user.last_name,
+          name: user.username || "",
           image: user.image_url,
         },
       });

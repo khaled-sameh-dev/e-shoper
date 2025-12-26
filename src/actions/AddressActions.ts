@@ -2,9 +2,10 @@
 "use server";
 
 import { auth } from "@clerk/nextjs/server";
-import { prisma } from "@/lib/db/prisma";
+
 import { Address } from "@/types";
 import { revalidatePath } from "next/cache";
+import { prisma } from "@/lib/db/prisma";
 
 export async function createAddress(data: {
   fullName: string;
@@ -28,15 +29,7 @@ export async function createAddress(data: {
     });
 
     if (!user) {
-      const { user: clerkUser } = await auth();
-      user = await prisma.user.create({
-        data: {
-          clerkId: userId,
-          email: clerkUser?.emailAddresses[0]?.emailAddress || "",
-          name: clerkUser?.fullName || null,
-          image: clerkUser?.imageUrl || null,
-        },
-      });
+      throw new Error("Unauthorized");
     }
 
     // If this is set as default, unset other defaults
