@@ -1,162 +1,3 @@
-// import { NextRequest, NextResponse } from "next/server";
-// import Stripe from "stripe";
-// import { prisma } from "@/lib/db/prisma";
-// import { headers } from "next/headers";
-
-// const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-
-// const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
-
-// export async function POST(req: NextRequest) {
-//   console.log("sreipe webhook running");
-//   try {
-//     const body = await req.text();
-//     const headersList = await headers();
-//     const signature = headersList.get("stripe-signature");
-
-//     if (!signature) {
-//       return NextResponse.json(
-//         { error: "No signature provided" },
-//         { status: 400 }
-//       );
-//     }
-
-//     let event: Stripe.Event;
-
-//     try {
-//       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-//     } catch (err) {
-//       console.error("Webhook signature verification failed:", err);
-//       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
-//     }
-
-//     // Handle the event
-//     switch (event.type) {
-//       case "checkout.session.completed": {
-//         const session = event.data.object as Stripe.Checkout.Session;
-//         await handleCheckoutSessionCompleted(session);
-//         break;
-//       }
-
-//       case "payment_intent.succeeded": {
-//         const paymentIntent = event.data.object as Stripe.PaymentIntent;
-//         console.log("PaymentIntent succeeded:", paymentIntent.id);
-//         break;
-//       }
-
-//       case "payment_intent.payment_failed": {
-//         const paymentIntent = event.data.object as Stripe.PaymentIntent;
-//         console.error("PaymentIntent failed:", paymentIntent.id);
-//         break;
-//       }
-
-//       default:
-//         console.log(`Unhandled event type: ${event.type}`);
-//     }
-
-//     return NextResponse.json({ received: true });
-//   } catch (error) {
-//     console.error("Webhook error:", error);
-//     return NextResponse.json(
-//       { error: "Webhook handler failed" },
-//       { status: 500 }
-//     );
-//   }
-// }
-
-// async function handleCheckoutSessionCompleted(
-//   session: Stripe.Checkout.Session
-// ) {
-//   try {
-//     const {
-//       id: sessionId,
-//       amount_total,
-//       customer_email,
-//       payment_intent,
-//       metadata,
-//     } = session;
-
-//     if (!metadata) {
-//       throw new Error("No metadata in session");
-//     }
-
-//     const { userId, addressId, shippingMethod, items } = metadata;
-
-//     if (!userId || !addressId || !items) {
-//       throw new Error("Missing required metadata");
-//     }
-
-//     const parsedItems = JSON.parse(items);
-
-//     // Calculate subtotal and tax
-//     const subtotal = (amount_total || 0) / 100; // Convert from cents
-//     const tax = subtotal * 0.1; // 10% tax estimation
-
-//     // Create order
-//     const order = await prisma.order.create({
-//       data: {
-//         orderNumber: `ORD-${Date.now()}`,
-//         userId,
-//         addressId,
-//         status: "PROCESSING",
-//         subtotal,
-//         discount: 0,
-//         tax,
-//         total: subtotal,
-//         stripeSessionId: sessionId,
-//         stripePaymentIntentId: payment_intent as string,
-//         paidAt: new Date(),
-//       },
-//     });
-
-//     // Create order items and update stock
-//     for (const item of parsedItems) {
-//       const product = await prisma.product.findUnique({
-//         where: { id: item.productId },
-//       });
-
-//       if (!product) continue;
-
-//       const variant = await prisma.productVariant.findUnique({
-//         where: { id: item.variantId },
-//       });
-
-//       if (!variant) continue;
-
-//       const finalPrice =
-//         Number(product.price) - (Number(product.discountAmount) || 0);
-
-//       // Create order item
-//       await prisma.orderItem.create({
-//         data: {
-//           orderId: order.id,
-//           productId: item.productId,
-//           variantId: item.variantId,
-//           quantity: item.quantity,
-//           price: finalPrice,
-//           total: finalPrice * item.quantity,
-//         },
-//       });
-
-//       // Update variant stock
-//       await prisma.productVariant.update({
-//         where: { id: item.variantId },
-//         data: {
-//           stock: {
-//             decrement: item.quantity,
-//           },
-//         },
-//       });
-//     }
-
-//     console.log(`Order created successfully: ${order.orderNumber}`);
-//   } catch (error) {
-//     console.error("Error handling checkout session:", error);
-//     throw error;
-//   }
-// }
-
-// app/api/webhooks/stripe/route.ts (UPDATED)
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/db/prisma";
@@ -171,6 +12,8 @@ export async function POST(req: NextRequest) {
     const body = await req.text();
     const headersList = await headers();
     const signature = headersList.get("stripe-signature");
+
+    alert("body" , body)
 
     if (!signature) {
       return NextResponse.json(
@@ -192,6 +35,7 @@ export async function POST(req: NextRequest) {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
+        alert("session in checkout session", session)
         await handleCheckoutSessionCompleted(session);
         break;
       }
@@ -233,6 +77,7 @@ async function handleCheckoutSessionCompleted(
       payment_intent,
       metadata,
     } = session;
+    alert("metadeta" , metadata)
 
     if (!metadata) {
       throw new Error("No metadata in session");
@@ -329,9 +174,10 @@ async function handleCheckoutSessionCompleted(
       }
 
       // 3. Clear user's cart from database
-      await tx.cartItem.deleteMany({
+      await tx.cart.deleteMany({
         where: { userId },
       });
+      alert("order" , order)
 
       return order;
     });
