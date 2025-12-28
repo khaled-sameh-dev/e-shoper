@@ -67,7 +67,7 @@ const ClerkController = () => {
               >
                 <p className="font-bold text-sm">Welcom Back!</p>
                 <p className="font-semibold text-gray-500 text-xs">
-                  {user.name || user.email}
+                  {user.username || user.email}
                 </p>
               </motion.div>
             )}
