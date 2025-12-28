@@ -25,8 +25,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    alert("user id" , userId)
-
     // Get user from database
     const user = await prisma.user.findUnique({
       where: { clerkId: userId },
@@ -54,7 +52,6 @@ export async function POST(req: NextRequest) {
 
     for (const item of items) {
       const product = await getProductById(item.productId);
-      alert("product" , product)
 
       if (!product) {
         return NextResponse.json(
@@ -131,7 +128,6 @@ export async function POST(req: NextRequest) {
         ),
       },
     });
-    alert("checkout session" , session)
 
     return NextResponse.json({ url: session.url });
   } catch (error) {
