@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     const headersList = await headers();
     const signature = headersList.get("stripe-signature");
 
-    alert("body" , body)
+ 
 
     if (!signature) {
       return NextResponse.json(
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
-        alert("session in checkout session", session)
+      
         await handleCheckoutSessionCompleted(session);
         break;
       }
@@ -77,7 +77,6 @@ async function handleCheckoutSessionCompleted(
       payment_intent,
       metadata,
     } = session;
-    alert("metadeta" , metadata)
 
     if (!metadata) {
       throw new Error("No metadata in session");
@@ -177,7 +176,7 @@ async function handleCheckoutSessionCompleted(
       await tx.cart.deleteMany({
         where: { userId },
       });
-      alert("order" , order)
+     
 
       return order;
     });
