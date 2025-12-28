@@ -65,9 +65,9 @@ const ClerkController = () => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3, delay: 0.2 }}
               >
-                <p className="font-bold text-sm">Welcome Back!</p>
-                <p className="font-semibold text-gray-500 text-sm">
-                  {user.fullName || user.firstName}
+                <p className="font-bold text-sm">Welcom Back!</p>
+                <p className="font-semibold text-gray-500 text-xs">
+                  {user.name || user.email}
                 </p>
               </motion.div>
             )}
