@@ -7,7 +7,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import AnimatedToggleText from "../../../../components/AnimatedToggleText";
+import AnimatedToggleText from "@/components/AnimatedToggleText";
 import { ChevronDown } from "lucide-react";
 import { ReactNode } from "react";
 
