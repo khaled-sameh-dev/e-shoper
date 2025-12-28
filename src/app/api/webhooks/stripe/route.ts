@@ -173,7 +173,7 @@ async function handleCheckoutSessionCompleted(
       }
 
       // 3. Clear user's cart from database
-      await tx.cart.deleteMany({
+      await tx.cartItem.deleteMany({
         where: { userId },
       });
      
